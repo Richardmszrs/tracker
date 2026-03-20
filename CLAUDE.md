@@ -55,7 +55,7 @@ src/
 - Commit after each sub-task completes cleanly
 
 ## Current phase
-Phase 1 — Bootstrap complete
+Phase 1 — Shell and layout complete ✓
 → Next: Phase 2 — Data layer
 
 ## macOS specifics

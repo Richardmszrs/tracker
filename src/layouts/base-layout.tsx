@@ -1,5 +1,6 @@
 import type React from "react";
-import DragWindowRegion from "@/components/drag-window-region";
+import Sidebar from "@/components/layout/sidebar";
+import TopBar from "@/components/layout/top-bar";
 
 export default function BaseLayout({
   children,
@@ -7,9 +8,12 @@ export default function BaseLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
-      <DragWindowRegion title="electron-shadcn" />
-      <main className="h-screen p-2 pb-20">{children}</main>
-    </>
+    <div className="flex h-screen overflow-hidden bg-background">
+      <Sidebar />
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <TopBar />
+        <main className="flex-1 overflow-auto p-6">{children}</main>
+      </div>
+    </div>
   );
 }

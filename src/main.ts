@@ -17,8 +17,10 @@ const inDevelopment = process.env.NODE_ENV === "development";
 function createWindow() {
   const preload = path.join(__dirname, "preload.js");
   const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1100,
+    height: 720,
+    minWidth: 800,
+    minHeight: 600,
     webPreferences: {
       devTools: inDevelopment,
       contextIsolation: true,
@@ -31,6 +33,11 @@ function createWindow() {
     trafficLightPosition:
       process.platform === "darwin" ? { x: 5, y: 5 } : undefined,
   });
+
+  // macOS vibrancy glass effect
+  if (process.platform === "darwin") {
+    mainWindow.setVibrancy("sidebar");
+  }
   ipcContext.setMainWindow(mainWindow);
 
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
@@ -40,6 +47,8 @@ function createWindow() {
       path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)
     );
   }
+
+  return mainWindow;
 }
 
 async function installExtensions() {
@@ -73,16 +82,19 @@ async function setupORPC() {
 
 app.whenReady().then(async () => {
   try {
-    createWindow();
+    const mainWindow = createWindow();
     await installExtensions();
     checkForUpdates();
     await setupORPC();
+    // Setup system tray after window is created
+    const { setupTray } = await import("./main/tray");
+    setupTray(mainWindow);
   } catch (error) {
     console.error("Error during app initialization:", error);
   }
 });
 
-//osX only
+// osX only
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
