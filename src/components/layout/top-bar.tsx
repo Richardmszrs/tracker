@@ -1,4 +1,5 @@
 import { useLocation } from "@tanstack/react-router";
+import { TimerDisplay } from "@/components/timer/timer-display";
 
 const pageTitles: Record<string, string> = {
   "/": "Dashboard",
@@ -16,7 +17,7 @@ export default function TopBar() {
     <header className="flex h-12 items-center justify-between border-border border-b px-6">
       <h2 className="font-semibold text-sm">{title}</h2>
       <div className="flex items-center gap-4">
-        <span className="font-mono text-sm tabular-nums">00:00:00</span>
+        <TimerDisplay />
       </div>
     </header>
   );

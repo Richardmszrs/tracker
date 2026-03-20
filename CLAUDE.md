@@ -55,8 +55,8 @@ src/
 - Commit after each sub-task completes cleanly
 
 ## Current phase
-Phase 2 — Data layer complete ✓
-→ Next: Phase 3 — UI layer
+Phase 3 — Core timer complete ✓
+→ Next: Phase 4 — Projects & clients
 
 ## macOS specifics
 - titleBarStyle: "hiddenInset" in BrowserWindow

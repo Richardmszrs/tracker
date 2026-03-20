@@ -17,6 +17,7 @@ import {
   projectUpdate,
 } from "@/main/ipc/projects";
 import { tagCreate, tagDelete, tagList } from "@/main/ipc/tags";
+import { timerGetState, timerStart, timerStop } from "@/main/ipc/timer";
 import { app } from "./app";
 import { shell } from "./shell";
 import { theme } from "./theme";
@@ -49,5 +50,10 @@ export const router = {
     list: entryList,
     update: entryUpdate,
     delete: entryDelete,
+  },
+  timer: {
+    start: timerStart,
+    stop: timerStop,
+    getState: timerGetState,
   },
 };

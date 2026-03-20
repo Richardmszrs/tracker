@@ -1,9 +1,19 @@
-import { app, type BrowserWindow, Menu, nativeImage, Tray } from "electron";
+import {
+  app,
+  type BrowserWindow,
+  Menu,
+  nativeImage,
+  Notification,
+  Tray,
+} from "electron";
+import { timerStateMachine } from "./timer";
 
 let tray: Tray | null = null;
+let mainWindowRef: BrowserWindow | null = null;
 
 export function setupTray(mainWindow: BrowserWindow) {
-  // Create a 16x16 tray icon from a data URL (blue circle clock-like icon)
+  mainWindowRef = mainWindow;
+
   const iconDataUrl =
     "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAAbwAAAG8B8aLcQwAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAADSSURBVDiN1ZI9DoJAEIW/WVgiYmFhYWFh4RfwAHgCLS0dPYEPgJWVhYUfQD4AC0QsgriwECzCbpYd2F025s+8yWQG+B8q4c3MBGCCxq0DbEEXsAQWwBzIAo4OQA/oAgY4AWfgDlzE7xRYiR0oA8/ABbhLsAReQKqD7wA1IAMcgaJg2L/Y4zfgJn5HYAtUY4YOsAN2wEX87oCNmMkA2+C6qJ0D1mJGDRiJGTqAGXASP0NgLWasgL7YoQO8iN8esBGzLGBb7FABPsXvENiKmRawLXaoCF/i9wZYYqYFbIsdKsKX+P0AVgqGA8qC4YoAAAAASUVORK5CYII=";
 
@@ -11,27 +21,40 @@ export function setupTray(mainWindow: BrowserWindow) {
   tray = new Tray(trayIcon);
   tray.setToolTip("Time Tracker");
 
-  const contextMenu = Menu.buildFromTemplate([
+  updateTrayMenu();
+
+  tray.setContextMenu(buildContextMenu());
+
+  tray.on("click", () => {
+    mainWindow.show();
+    mainWindow.focus();
+  });
+}
+
+function buildContextMenu(): Menu {
+  const state = timerStateMachine.getState();
+  return Menu.buildFromTemplate([
     {
       label: "Show App",
       click: () => {
-        mainWindow.show();
-        mainWindow.focus();
+        mainWindowRef?.show();
+        mainWindowRef?.focus();
       },
     },
     { type: "separator" },
     {
-      label: "Start Timer",
+      label: state.running ? "Stop Timer" : "Start Timer",
       click: () => {
-        // TODO: wire to timer IPC
-        console.log("Start Timer clicked");
-      },
-    },
-    {
-      label: "Stop Timer",
-      click: () => {
-        // TODO: wire to timer IPC
-        console.log("Stop Timer clicked");
+        if (state.running) {
+          const result = timerStateMachine.stop();
+          if (result) {
+            showNotification("Timer Stopped", "Time entry saved.");
+          }
+        } else {
+          timerStateMachine.start("Quick timer", null);
+          showNotification("Timer Started", "Timer is now running.");
+        }
+        updateTrayMenu();
       },
     },
     { type: "separator" },
@@ -42,11 +65,18 @@ export function setupTray(mainWindow: BrowserWindow) {
       },
     },
   ]);
-
-  tray.setContextMenu(contextMenu);
-
-  tray.on("click", () => {
-    mainWindow.show();
-    mainWindow.focus();
-  });
 }
+
+function updateTrayMenu() {
+  if (tray) {
+    tray.setContextMenu(buildContextMenu());
+  }
+}
+
+function showNotification(title: string, body: string) {
+  if (Notification.isSupported()) {
+    new Notification({ title, body }).show();
+  }
+}
+
+export { updateTrayMenu };

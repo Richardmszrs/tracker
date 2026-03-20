@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, globalShortcut, Notification } from "electron";
 import { ipcMain } from "electron/main";
 import {
   installExtension,
@@ -9,6 +9,7 @@ import {
 import { UpdateSourceType, updateElectronApp } from "update-electron-app";
 import { ipcContext } from "@/ipc/context";
 import { IPC_CHANNELS } from "./constants";
+import { timerStateMachine } from "./main/timer";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -93,6 +94,22 @@ app.whenReady().then(async () => {
     // Setup system tray after window is created
     const { setupTray } = await import("./main/tray");
     setupTray(mainWindow);
+
+    // Register global shortcut Cmd+Shift+T to toggle timer
+    globalShortcut.register("Cmd+Shift+T", () => {
+      const state = timerStateMachine.getState();
+      if (state.running) {
+        const result = timerStateMachine.stop();
+        if (result && Notification.isSupported()) {
+          new Notification({ title: "Timer Stopped", body: "Time entry saved." }).show();
+        }
+      } else {
+        timerStateMachine.start("Quick timer", null);
+        if (Notification.isSupported()) {
+          new Notification({ title: "Timer Started", body: "Timer is now running." }).show();
+        }
+      }
+    });
   } catch (error) {
     console.error("Error during app initialization:", error);
   }
