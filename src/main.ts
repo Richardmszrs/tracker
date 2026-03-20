@@ -82,6 +82,10 @@ async function setupORPC() {
 
 app.whenReady().then(async () => {
   try {
+    // Run migrations before creating window
+    const { runMigrations } = await import("./main/db/migrate");
+    runMigrations();
+
     const mainWindow = createWindow();
     await installExtensions();
     checkForUpdates();
