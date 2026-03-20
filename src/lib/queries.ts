@@ -153,10 +153,21 @@ export function useTagDelete() {
 }
 
 // Entries
-export function useEntries(input?: { startDate?: number; endDate?: number }) {
+export interface EntriesFilters {
+  startDate?: number;
+  endDate?: number;
+  projectIds?: string[];
+  clientIds?: string[];
+  billable?: "all" | "billable" | "non-billable";
+}
+
+export function useEntries(filters?: EntriesFilters) {
   return useQuery({
-    queryKey: ["entries", input],
-    queryFn: () => api.entries.list(input ?? {}),
+    queryKey: ["entries", filters],
+    queryFn: () => api.entries.list({
+      startDate: filters?.startDate,
+      endDate: filters?.endDate,
+    }),
   });
 }
 
@@ -202,5 +213,20 @@ export function useEntryDelete() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["entries"] });
     },
+  });
+}
+
+export function useExportEntries() {
+  return useMutation({
+    mutationFn: (input: {
+      format: "csv" | "json";
+      filters?: {
+        startDate?: number;
+        endDate?: number;
+        projectIds?: string[];
+        clientIds?: string[];
+        billable?: "all" | "billable" | "non-billable";
+      };
+    }) => api.entries.export(input),
   });
 }

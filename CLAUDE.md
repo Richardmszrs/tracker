@@ -55,8 +55,8 @@ src/
 - Commit after each sub-task completes cleanly
 
 ## Current phase
-Phase 4 — Projects & clients complete ✓
-→ Next: Phase 5 — Polish & reports
+Phase 5 — Reports & export complete ✓
+→ Next: Phase 6 — Polish & hardening
 
 ## macOS specifics
 - titleBarStyle: "hiddenInset" in BrowserWindow
