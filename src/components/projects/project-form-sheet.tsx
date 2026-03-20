@@ -55,7 +55,7 @@ export function ProjectFormSheet({
 
   const [name, setName] = useState("");
   const [color, setColor] = useState(PRESET_COLORS[0]);
-  const [clientId, setClientId] = useState<string>("");
+  const [clientId, setClientId] = useState<string>("__none__");
   const [hourlyRate, setHourlyRate] = useState("");
   const [billable, setBillable] = useState(true);
 
@@ -63,13 +63,13 @@ export function ProjectFormSheet({
     if (project) {
       setName(project.name);
       setColor(project.color);
-      setClientId(project.clientId ?? "");
+      setClientId(project.clientId ?? "__none__");
       setHourlyRate(project.hourlyRate?.toString() ?? "");
       setBillable(!project.archived);
     } else {
       setName("");
       setColor(PRESET_COLORS[0]);
-      setClientId("");
+      setClientId("__none__");
       setHourlyRate("");
       setBillable(true);
     }
@@ -84,7 +84,7 @@ export function ProjectFormSheet({
         id: project.id,
         name: name.trim(),
         color,
-        clientId: clientId || null,
+        clientId: clientId === "__none__" ? null : clientId,
         hourlyRate: rate ?? null,
         archived: !billable,
       });
@@ -92,7 +92,7 @@ export function ProjectFormSheet({
       await createMutation.mutateAsync({
         name: name.trim(),
         color,
-        clientId: clientId || undefined,
+        clientId: clientId === "__none__" ? undefined : clientId,
         hourlyRate: rate,
       });
     }
@@ -137,7 +137,7 @@ export function ProjectFormSheet({
                 <SelectValue placeholder="No client" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No client</SelectItem>
+                <SelectItem value="__none__">No client</SelectItem>
                 {clients.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.name}

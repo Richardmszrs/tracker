@@ -35,7 +35,7 @@ export function ManualEntryDialog({
   const createMutation = useEntryCreate();
 
   const [description, setDescription] = useState("");
-  const [projectId, setProjectId] = useState<string>("");
+  const [projectId, setProjectId] = useState<string>("__none__");
   const [tagIds, setTagIds] = useState<string[]>([]);
   const [date, setDate] = useState(
     new Date().toISOString().split("T")[0]
@@ -45,7 +45,7 @@ export function ManualEntryDialog({
 
   const reset = () => {
     setDescription("");
-    setProjectId("");
+    setProjectId("__none__");
     setTagIds([]);
     setDate(new Date().toISOString().split("T")[0]);
     setStartTime("09:00");
@@ -62,7 +62,7 @@ export function ManualEntryDialog({
       description: description.trim(),
       startAt: startDateTime,
       endAt: endDateTime,
-      projectId: projectId || undefined,
+      projectId: projectId === "__none__" ? undefined : projectId,
       billable: true,
       tagIds,
     });
@@ -94,7 +94,7 @@ export function ManualEntryDialog({
                 <SelectValue placeholder="No project" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No project</SelectItem>
+                <SelectItem value="__none__">No project</SelectItem>
                 {projects.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
                     <span className="flex items-center gap-2">

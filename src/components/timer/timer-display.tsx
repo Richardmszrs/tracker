@@ -43,7 +43,7 @@ export function TimerDisplay() {
   const { data: projects = [] } = useProjects();
 
   const [description, setDescription] = useState("");
-  const [projectId, setProjectId] = useState<string>("");
+  const [projectId, setProjectId] = useState<string>("__none__");
   const [tagIds, setTagIds] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
   const [elapsed, setElapsed] = useState("00:00:00");
@@ -66,11 +66,11 @@ export function TimerDisplay() {
     if (!description.trim()) return;
     await startMutation.mutateAsync({
       description: description.trim(),
-      projectId: projectId || null,
+      projectId: projectId === "__none__" ? null : projectId,
       tagIds,
     });
     setDescription("");
-    setProjectId("");
+    setProjectId("__none__");
     setTagIds([]);
     setOpen(false);
   };
@@ -128,7 +128,7 @@ export function TimerDisplay() {
                     <SelectValue placeholder="No project" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No project</SelectItem>
+                    <SelectItem value="__none__">No project</SelectItem>
                     {projects.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
                         <span className="flex items-center gap-2">
