@@ -3,3 +3,17 @@
 // whether you're running in development or production).
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
+
+interface IdleDetectedData {
+  idleStartTime: number;
+}
+
+interface ElectronEvents {
+  onIdleDetected: (callback: (data: IdleDetectedData) => void) => void;
+  onIdleDismissed: (callback: () => void) => void;
+  onUpdateReady: (callback: () => void) => void;
+}
+
+interface Window {
+  electronEvents: ElectronEvents;
+}

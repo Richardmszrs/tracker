@@ -1,8 +1,9 @@
 "use client";
 
-import { PencilIcon, TrashIcon } from "lucide-react";
+import { TrashIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useEntries, useEntryDelete, useProjects, useTags } from "@/lib/queries";
 
 function formatDuration(startAt: Date, endAt: Date | null): string {
@@ -92,7 +93,7 @@ export function TimeEntriesList() {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const { data: entries = [] } = useEntries({
+  const { data: entries = [], isPending } = useEntries({
     startDate: today.getTime(),
     endDate: tomorrow.getTime(),
   });
@@ -108,6 +109,23 @@ export function TimeEntriesList() {
     (a, b) =>
       new Date(b.startAt).getTime() - new Date(a.startAt).getTime()
   );
+
+  if (isPending) {
+    return (
+      <div className="flex flex-col gap-2">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="flex items-center gap-3 px-3 py-2">
+            <Skeleton className="size-2.5 rounded-full" />
+            <div className="flex-1 space-y-1">
+              <Skeleton className="h-3 w-32" />
+              <Skeleton className="h-2 w-20" />
+            </div>
+            <Skeleton className="h-4 w-12" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   if (sortedEntries.length === 0) {
     return (

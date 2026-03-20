@@ -1,6 +1,12 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { app, BrowserWindow, globalShortcut, Notification } from "electron";
+import {
+  app,
+  BrowserWindow,
+  globalShortcut,
+  Notification,
+  powerMonitor,
+} from "electron";
 import { ipcMain } from "electron/main";
 import {
   installExtension,
@@ -10,6 +16,7 @@ import { UpdateSourceType, updateElectronApp } from "update-electron-app";
 import { ipcContext } from "@/ipc/context";
 import { IPC_CHANNELS } from "./constants";
 import { timerStateMachine } from "./main/timer";
+import { settingsStore } from "./main/settings";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -81,6 +88,31 @@ async function setupORPC() {
   });
 }
 
+function setupIdleDetection(mainWindow: BrowserWindow) {
+  const thresholdMinutes = settingsStore.get("idleThresholdMinutes");
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (powerMonitor as any).on("idle", () => {
+    const state = timerStateMachine.getState();
+    if (!state.running) return;
+
+    if (Notification.isSupported()) {
+      new Notification({
+        title: "Time Tracker",
+        body: `Timer still running — you've been idle for ${thresholdMinutes} min`,
+      }).show();
+    }
+    mainWindow.webContents.send(IPC_CHANNELS.IDLE_DETECTED, {
+      idleStartTime: Date.now(),
+    });
+  });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (powerMonitor as any).on("active", () => {
+    mainWindow.webContents.send(IPC_CHANNELS.IDLE_DISMISSED);
+  });
+}
+
 app.whenReady().then(async () => {
   try {
     // Run migrations before creating window
@@ -94,6 +126,9 @@ app.whenReady().then(async () => {
     // Setup system tray after window is created
     const { setupTray } = await import("./main/tray");
     setupTray(mainWindow);
+
+    // Setup idle detection
+    setupIdleDetection(mainWindow);
 
     // Register global shortcut Cmd+Shift+T to toggle timer
     globalShortcut.register("Cmd+Shift+T", () => {

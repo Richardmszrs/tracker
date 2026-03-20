@@ -1,14 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PlusIcon } from "lucide-react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { ManualEntryDialog } from "@/components/entries/manual-entry-dialog";
 import { TimeEntriesList } from "@/components/entries/time-entries-list";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 function DashboardPage() {
   const [manualEntryOpen, setManualEntryOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.metaKey && e.key === "n") {
+        e.preventDefault();
+        setManualEntryOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   return (
     <div className="flex flex-col gap-6">
@@ -23,7 +35,9 @@ function DashboardPage() {
           Add manual entry
         </Button>
       </div>
-      <TimeEntriesList />
+      <ErrorBoundary>
+        <TimeEntriesList />
+      </ErrorBoundary>
       <ManualEntryDialog
         open={manualEntryOpen}
         onOpenChange={setManualEntryOpen}

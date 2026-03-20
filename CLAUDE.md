@@ -29,7 +29,9 @@ src/
       index.tsx       # Dashboard / timer
       projects.tsx
       clients.tsx
+      tags.tsx
       reports.tsx
+      settings.tsx    # App settings (idle threshold, theme, etc.)
     components/
       timer/
       projects/
@@ -55,8 +57,13 @@ src/
 - Commit after each sub-task completes cleanly
 
 ## Current phase
-Phase 5 — Reports & export complete ✓
-→ Next: Phase 6 — Polish & hardening
+Phase 6 — Polish & macOS extras complete ✓
+
+## Build
+```bash
+nvm use 22 && npm run make    # Build .dmg/.zip distributable
+npm run test:all              # Run vitest + playwright e2e
+```
 
 ## macOS specifics
 - titleBarStyle: "hiddenInset" in BrowserWindow

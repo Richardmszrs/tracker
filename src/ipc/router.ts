@@ -19,6 +19,8 @@ import {
 import { tagCreate, tagDelete, tagList } from "@/main/ipc/tags";
 import { timerGetState, timerStart, timerStop } from "@/main/ipc/timer";
 import { exportEntries } from "@/main/ipc/export";
+import { settingsGet, settingsUpdate } from "@/main/ipc/settings";
+import { idleDiscardTime } from "@/main/ipc/idle";
 import { app } from "./app";
 import { shell } from "./shell";
 import { theme } from "./theme";
@@ -52,6 +54,13 @@ export const router = {
     update: entryUpdate,
     delete: entryDelete,
     export: exportEntries,
+  },
+  settings: {
+    get: settingsGet,
+    update: settingsUpdate,
+  },
+  idle: {
+    discardTime: idleDiscardTime,
   },
   timer: {
     start: timerStart,

@@ -6,6 +6,7 @@ import {
   Notification,
   Tray,
 } from "electron";
+import { UpdateSourceType, updateElectronApp } from "update-electron-app";
 import { timerStateMachine } from "./timer";
 
 let tray: Tray | null = null;
@@ -55,6 +56,18 @@ function buildContextMenu(): Menu {
           showNotification("Timer Started", "Timer is now running.");
         }
         updateTrayMenu();
+      },
+    },
+    { type: "separator" },
+    {
+      label: "Check for Updates",
+      click: () => {
+        updateElectronApp({
+          updateSource: {
+            type: UpdateSourceType.ElectronPublicUpdateService,
+            repo: "LuanRoger/electron-shadcn",
+          },
+        });
       },
     },
     { type: "separator" },

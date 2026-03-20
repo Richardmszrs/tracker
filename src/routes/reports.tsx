@@ -4,6 +4,8 @@ import { useState, useMemo } from "react";
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { DownloadIcon, ChevronDownIcon, ArrowUpIcon, ArrowDownIcon } from "lucide-react";
 import { createFileRoute } from "@tanstack/react-router";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   useReactTable,
   getCoreRowModel,
@@ -656,7 +658,7 @@ function ReportsPage() {
     billable: "all",
   });
 
-  const { data: allEntries = [] } = useEntries();
+  const { data: allEntries = [], isPending } = useEntries();
   const { data: projects = [] } = useProjects();
   const { data: clients = [] } = useClients();
   const exportMutation = useExportEntries();
@@ -764,26 +766,44 @@ function ReportsPage() {
 
       <SummaryCards entries={enrichedEntries} projectMap={projectMap} />
 
+      <ErrorBoundary>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
           <CardContent className="px-4 py-3">
             <p className="text-xs font-medium mb-3">Hours by Day</p>
-            <BarChartView entries={enrichedEntries} />
+            {isPending ? (
+              <Skeleton className="h-[200px] w-full" />
+            ) : (
+              <BarChartView entries={enrichedEntries} />
+            )}
           </CardContent>
         </Card>
         <Card>
           <CardContent className="px-4 py-3">
             <p className="text-xs font-medium mb-3">Time by Project</p>
-            <PieChartView entries={enrichedEntries} projectMap={projectMap} />
+            {isPending ? (
+              <Skeleton className="h-[200px] w-full" />
+            ) : (
+              <PieChartView entries={enrichedEntries} projectMap={projectMap} />
+            )}
           </CardContent>
         </Card>
       </div>
 
       <Card>
         <CardContent className="px-0 py-3">
-          <EntriesTable entries={enrichedEntries} projectMap={projectMap} />
+          {isPending ? (
+            <div className="flex flex-col gap-2 px-4">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Skeleton key={i} className="h-8 w-full" />
+              ))}
+            </div>
+          ) : (
+            <EntriesTable entries={enrichedEntries} projectMap={projectMap} />
+          )}
         </CardContent>
       </Card>
+      </ErrorBoundary>
     </div>
   );
 }

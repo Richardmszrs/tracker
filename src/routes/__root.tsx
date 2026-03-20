@@ -1,6 +1,8 @@
 import { createRootRoute, Outlet } from "@tanstack/react-router";
 import BaseLayout from "@/layouts/base-layout";
 import { CommandPalette } from "@/components/command/command-palette";
+import { OnboardingDialog } from "@/components/onboarding/onboarding-dialog";
+import { IdleDialog } from "@/components/idle/idle-dialog";
 
 /* import { TanStackRouterDevtools } from '@tanstack/react-router-devtools' */
 
@@ -15,6 +17,8 @@ function Root() {
         <Outlet />
       </BaseLayout>
       <CommandPalette />
+      <OnboardingDialog />
+      <IdleDialog />
       {/* Uncomment the following line to enable the router devtools */}
       {/* <TanStackRouterDevtools /> */}
     </>

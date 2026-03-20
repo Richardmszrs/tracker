@@ -38,6 +38,8 @@ export function useProjects() {
   return useQuery({
     queryKey: ["projects"],
     queryFn: () => api.projects.list(),
+    staleTime: 30_000,
+    gcTime: 300_000,
   });
 }
 
@@ -88,6 +90,8 @@ export function useClients() {
   return useQuery({
     queryKey: ["clients"],
     queryFn: () => api.clients.list(),
+    staleTime: 30_000,
+    gcTime: 300_000,
   });
 }
 
@@ -128,6 +132,8 @@ export function useTags() {
   return useQuery({
     queryKey: ["tags"],
     queryFn: () => api.tags.list(),
+    staleTime: 30_000,
+    gcTime: 300_000,
   });
 }
 
@@ -168,6 +174,7 @@ export function useEntries(filters?: EntriesFilters) {
       startDate: filters?.startDate,
       endDate: filters?.endDate,
     }),
+    staleTime: 10_000,
   });
 }
 
@@ -228,5 +235,33 @@ export function useExportEntries() {
         billable?: "all" | "billable" | "non-billable";
       };
     }) => api.entries.export(input),
+  });
+}
+
+// Settings
+export interface AppSettings {
+  idleThresholdMinutes: number;
+  defaultBillable: boolean;
+  weekStartsOn: 0 | 1;
+  currencySymbol: string;
+  theme: "light" | "dark" | "system";
+  onboardingComplete: boolean;
+}
+
+export function useSettings() {
+  return useQuery({
+    queryKey: ["settings"],
+    queryFn: () => api.settings.get(),
+    staleTime: Infinity,
+  });
+}
+
+export function useSettingsUpdate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Partial<AppSettings>) => api.settings.update(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["settings"] });
+    },
   });
 }
