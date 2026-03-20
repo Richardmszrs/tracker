@@ -8,4 +8,9 @@ export default defineConfig({
       "@": path.resolve(import.meta.dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      external: ["better-sqlite3"],
+    },
+  },
 });

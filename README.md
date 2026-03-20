@@ -1,4 +1,4 @@
-# WebTimeTracker
+# UPweb TimeTracker
 
 A native macOS time tracking application built with Electron. Track time against projects, generate reports, and export your data — all with a fast, native experience.
 
