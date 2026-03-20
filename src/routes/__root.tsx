@@ -1,5 +1,6 @@
 import { createRootRoute, Outlet } from "@tanstack/react-router";
 import BaseLayout from "@/layouts/base-layout";
+import { CommandPalette } from "@/components/command/command-palette";
 
 /* import { TanStackRouterDevtools } from '@tanstack/react-router-devtools' */
 
@@ -9,11 +10,14 @@ import BaseLayout from "@/layouts/base-layout";
 
 function Root() {
   return (
-    <BaseLayout>
-      <Outlet />
+    <>
+      <BaseLayout>
+        <Outlet />
+      </BaseLayout>
+      <CommandPalette />
       {/* Uncomment the following line to enable the router devtools */}
       {/* <TanStackRouterDevtools /> */}
-    </BaseLayout>
+    </>
   );
 }
 

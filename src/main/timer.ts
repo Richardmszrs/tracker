@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { eq } from "drizzle-orm";
 import { getDb } from "./db/client";
-import { timeEntries } from "./db/schema";
+import { entryTags, timeEntries } from "./db/schema";
 
 export interface TimerState {
   running: boolean;
@@ -11,6 +11,7 @@ export interface TimerState {
   entryId: string | null;
   description: string;
   projectId: string | null;
+  tagIds: string[];
 }
 
 interface PersistedTimerState {
@@ -24,6 +25,7 @@ const defaultState: TimerState = {
   entryId: null,
   description: "",
   projectId: null,
+  tagIds: [],
 };
 
 class TimerStateMachine {
@@ -76,7 +78,7 @@ class TimerStateMachine {
     }
   }
 
-  start(description: string, projectId: string | null): string {
+  start(description: string, projectId: string | null, tagIds: string[] = []): string {
     if (this.state.running) {
       throw new Error("Timer is already running");
     }
@@ -97,12 +99,19 @@ class TimerStateMachine {
       })
       .returning();
 
+    if (tagIds.length > 0) {
+      db.insert(entryTags).values(
+        tagIds.map((tagId) => ({ entryId: id, tagId }))
+      );
+    }
+
     this.state = {
       running: true,
       startAt: startAt.getTime(),
       entryId: id,
       description,
       projectId,
+      tagIds,
     };
     this.persistState();
     return id;
@@ -129,6 +138,7 @@ class TimerStateMachine {
       entryId: null,
       description: this.state.description,
       projectId: this.state.projectId,
+      tagIds: [],
     };
     this.persistState();
 

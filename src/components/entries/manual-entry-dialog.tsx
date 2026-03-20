@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useEntryCreate, useProjects } from "@/lib/queries";
+import { TagMultiSelect } from "@/components/entries/tag-multi-select";
 
 interface ManualEntryDialogProps {
   open: boolean;
@@ -35,6 +36,7 @@ export function ManualEntryDialog({
 
   const [description, setDescription] = useState("");
   const [projectId, setProjectId] = useState<string>("");
+  const [tagIds, setTagIds] = useState<string[]>([]);
   const [date, setDate] = useState(
     new Date().toISOString().split("T")[0]
   );
@@ -44,6 +46,7 @@ export function ManualEntryDialog({
   const reset = () => {
     setDescription("");
     setProjectId("");
+    setTagIds([]);
     setDate(new Date().toISOString().split("T")[0]);
     setStartTime("09:00");
     setEndTime("10:00");
@@ -61,6 +64,7 @@ export function ManualEntryDialog({
       endAt: endDateTime,
       projectId: projectId || undefined,
       billable: true,
+      tagIds,
     });
 
     reset();
@@ -104,6 +108,10 @@ export function ManualEntryDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Tags</Label>
+            <TagMultiSelect value={tagIds} onChange={setTagIds} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="entry-date">Date</Label>

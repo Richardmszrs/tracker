@@ -16,8 +16,8 @@ const projectUpdateSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1).optional(),
   color: z.string().min(1).optional(),
-  clientId: z.string().optional(),
-  hourlyRate: z.number().optional(),
+  clientId: z.string().nullable().optional(),
+  hourlyRate: z.number().nullable().optional(),
   archived: z.boolean().optional(),
 });
 

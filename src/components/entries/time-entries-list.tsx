@@ -3,7 +3,7 @@
 import { PencilIcon, TrashIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useEntries, useEntryDelete, useProjects } from "@/lib/queries";
+import { useEntries, useEntryDelete, useProjects, useTags } from "@/lib/queries";
 
 function formatDuration(startAt: Date, endAt: Date | null): string {
   if (!endAt) return "—";
@@ -18,28 +18,34 @@ function formatTime(date: Date): string {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+interface EntryWithRelations {
+  id: string;
+  description: string;
+  startAt: Date;
+  endAt: Date | null;
+  projectId: string | null;
+  billable: boolean;
+  tags?: { tagId: string }[];
+}
+
 interface TimeEntryRowProps {
-  entry: {
-    id: string;
-    description: string;
-    startAt: Date;
-    endAt: Date | null;
-    projectId: string | null;
-    billable: boolean;
-  };
+  entry: EntryWithRelations;
   project?: {
     id: string;
     name: string;
     color: string;
   } | null;
+  tagMap: Map<string, string>;
   onDelete: (id: string) => void;
 }
 
-function TimeEntryRow({ entry, project, onDelete }: TimeEntryRowProps) {
+function TimeEntryRow({ entry, project, tagMap, onDelete }: TimeEntryRowProps) {
+  const entryTags = entry.tags?.map((t) => tagMap.get(t.tagId)).filter(Boolean) ?? [];
+
   return (
-    <div className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-muted/50">
+    <div className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-muted/50 group">
       <div
-        className="size-2 rounded-full shrink-0"
+        className="size-2.5 rounded-full shrink-0"
         style={{ backgroundColor: project?.color ?? "#888" }}
       />
       <div className="flex-1 min-w-0">
@@ -47,11 +53,20 @@ function TimeEntryRow({ entry, project, onDelete }: TimeEntryRowProps) {
         <p className="text-muted-foreground text-[0.625rem]">
           {formatTime(entry.startAt)}
           {entry.endAt ? ` – ${formatTime(entry.endAt)}` : " – running"}
+          {entryTags.length > 0 && (
+            <span className="ml-1.5">
+              {entryTags.map((tag) => (
+                <Badge key={tag} variant="outline" className="text-[0.625rem] h-3.5 ml-0.5">
+                  {tag}
+                </Badge>
+              ))}
+            </span>
+          )}
         </p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
         {project && (
-          <Badge variant="outline" className="text-[0.625rem]">
+          <Badge variant="outline" className="text-[0.625rem] h-5">
             {project.name}
           </Badge>
         )}
@@ -82,9 +97,11 @@ export function TimeEntriesList() {
     endDate: tomorrow.getTime(),
   });
   const { data: projects = [] } = useProjects();
+  const { data: tags = [] } = useTags();
   const deleteMutation = useEntryDelete();
 
   const projectMap = new Map(projects.map((p) => [p.id, p]));
+  const tagMap = new Map(tags.map((t) => [t.id, t.name]));
 
   // Sort entries by startAt descending
   const sortedEntries = [...entries].sort(
@@ -103,13 +120,13 @@ export function TimeEntriesList() {
   return (
     <div className="flex flex-col gap-1">
       {sortedEntries.map((entry) => (
-        <div key={entry.id} className="group">
-          <TimeEntryRow
-            entry={entry as (typeof entry) & { id: string }}
-            project={entry.projectId ? projectMap.get(entry.projectId) ?? null : null}
-            onDelete={(id) => deleteMutation.mutate({ id })}
-          />
-        </div>
+        <TimeEntryRow
+          key={entry.id}
+          entry={entry as EntryWithRelations}
+          project={entry.projectId ? projectMap.get(entry.projectId) ?? null : null}
+          tagMap={tagMap}
+          onDelete={(id) => deleteMutation.mutate({ id })}
+        />
       ))}
     </div>
   );

@@ -23,6 +23,7 @@ import {
   useTimerStop,
   useProjects,
 } from "@/lib/queries";
+import { TagMultiSelect } from "@/components/entries/tag-multi-select";
 
 function formatElapsed(startAt: number | null): string {
   if (!startAt) return "00:00:00";
@@ -43,8 +44,11 @@ export function TimerDisplay() {
 
   const [description, setDescription] = useState("");
   const [projectId, setProjectId] = useState<string>("");
+  const [tagIds, setTagIds] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
   const [elapsed, setElapsed] = useState("00:00:00");
+
+  const selectedProject = projects.find((p) => p.id === projectId);
 
   useEffect(() => {
     if (state?.running && state?.startAt) {
@@ -63,9 +67,11 @@ export function TimerDisplay() {
     await startMutation.mutateAsync({
       description: description.trim(),
       projectId: projectId || null,
+      tagIds,
     });
     setDescription("");
     setProjectId("");
+    setTagIds([]);
     setOpen(false);
   };
 
@@ -77,6 +83,12 @@ export function TimerDisplay() {
 
   return (
     <div className="flex items-center gap-3">
+      {selectedProject && (
+        <span
+          className="size-2.5 rounded-full shrink-0"
+          style={{ backgroundColor: selectedProject.color }}
+        />
+      )}
       <span className="font-mono text-sm tabular-nums">{elapsed}</span>
       {isRunning ? (
         <Button
@@ -94,7 +106,7 @@ export function TimerDisplay() {
               <PlayIcon className="size-3" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-72" align="end">
+          <PopoverContent className="w-80" align="end">
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="timer-description">Description</Label>
@@ -130,6 +142,10 @@ export function TimerDisplay() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>Tags</Label>
+                <TagMultiSelect value={tagIds} onChange={setTagIds} />
               </div>
               <Button
                 size="sm"
