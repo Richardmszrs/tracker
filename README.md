@@ -1,114 +1,162 @@
-# electron-shadcn
+# WebTimeTracker
 
-Electron in all its glory. Everything you will need to develop your beautiful desktop application.
+A native macOS time tracking application built with Electron. Track time against projects, generate reports, and export your data — all with a fast, native experience.
 
-![Demo GIF](https://github.com/LuanRoger/electron-shadcn/blob/main/images/demo.png)
+## Features
 
-## Libs and tools
+- **Timer** — Start/stop timer with global shortcut (`Cmd+Shift+T`)
+- **Projects & Clients** — Organize time by project and client with color coding
+- **Tags** — Label entries with custom tags
+- **Reports** — View daily/weekly/monthly summaries with stacked bar charts and pie charts
+- **Export** — Export time entries to CSV or JSON
+- **Idle Detection** — Detects when your system is idle while timer is running
+- **Manual Entries** — Add past time entries manually
+- **Auto-Update** — Automatically checks for updates on GitHub releases
+- **Keyboard Shortcuts** — Fast navigation with `Cmd+K` command palette
 
-To develop a Electron app, you probably will need some UI, test, formatter, style or other kind of library or framework, so let me install and configure some of them to you.
+## Tech Stack
 
-### Core 🏍️
+- **Electron 40** — Desktop runtime
+- **React 19** + **TypeScript** — UI framework
+- **Vite 7** — Build tool
+- **TanStack Router** — File-based routing
+- **TanStack Query** — Data fetching & caching
+- **shadcn/ui** + **Tailwind 4** — UI components
+- **oRPC** — Type-safe IPC between main and renderer
+- **Drizzle ORM** + **better-sqlite3** — Local database
+- **recharts** — Charts for reports
+- **Vitest** + **Playwright** — Testing
 
-- [Electron 40](https://www.electronjs.org)
-- [Vite 7](https://vitejs.dev)
+## Development
 
-### DX 🛠️
+### Prerequisites
 
-- [TypeScript 5.9](https://www.typescriptlang.org)
-- [oRPC](https://orpc.unnoq.com)
-- [Prettier](https://prettier.io)
-- [Ultracite with Biome](https://www.ultracite.ai/providers/biome)
-- [Zod 4](https://zod.dev)
-- [React Query (TanStack)](https://react-query.tanstack.com)
+- **Node.js 22+** (required for native module support)
+- **macOS** (this app is built for macOS)
 
-### UI 🎨
-
-- [React 19.2](https://reactjs.org)
-- [Tailwind 4](https://tailwindcss.com)
-- [Shadcn UI](https://ui.shadcn.com)
-- [Geist](https://vercel.com/font) as default font
-- [i18next](https://www.i18next.com)
-- [TanStack Router](https://tanstack.com/router) (with file based routing)
-- [Lucide](https://lucide.dev)
-
-### Test 🧪
-
-- [Vitest](https://vitest.dev)
-- [Playwright](https://playwright.dev)
-- [React Testing Library](https://testing-library.com/docs/react-testing-library/intro)
-
-### Packing and distribution 📦
-
-- [Electron Forge](https://www.electronforge.io)
-
-### CI/CD 🚀
-
-- Pre-configured [GitHub Actions workflow](https://github.com/LuanRoger/electron-shadcn/blob/main/.github/workflows/playwright.yml), for test with Playwright
-
-### Project preferences 🎯
-
-- Use Context isolation
-- [React Compiler](https://react.dev/learn/react-compiler) is enabled by default.
-- `titleBarStyle`: hidden (Using custom title bar)
-- Geist as default font
-- Some default styles was applied, check the [`styles`](https://github.com/LuanRoger/electron-shadcn/tree/main/src/styles) directory
-- React DevTools are installed by default
-
-## How to use
-
-1. Clone this repository
+### Setup
 
 ```bash
-git clone https://github.com/LuanRoger/electron-shadcn.git
-```
+# Clone the repository
+git clone https://github.com/yourusername/webtimetracker.git
+cd webtimetracker
 
-Or use it as a template on GitHub
-
-2. Install dependencies
-
-```bash
+# Install dependencies
 npm install
-```
 
-3. Run the app
-
-```bash
+# Run in development mode
 npm run start
 ```
 
-Now you can go directly to `/src/routes/index.tsx` and modify the app as you want.
+The app will launch in development mode with hot reload.
 
-> You can also delete the `/src/routes/second.tsx` file if you don't want a second page.
+### Testing
 
-## Auto update
+```bash
+# Run unit tests (Vitest)
+npm test
 
-> [!WARNING]
-> This feature only work in open-source repositories in GitHub, if you need to use in a private repository, you need to setup a custom update server. Check the [Updating Applications](https://www.electronjs.org/docs/latest/tutorial/updates) section in the Electron documentation for more details.
+# Run e2e tests (Playwright)
+npm run test:e2e
 
-The auto update uses GitHub Releases as source for the updates. The `publish` script will automatically create a new release with the version specified in your `package.json` file. You can run locally the `publish` script to create a new release, but you need to set the `GITHUB_TOKEN` environment variable with a GitHub Personal Access Token that has permission to create releases in your repository.
+# Run all tests
+npm run test:all
+```
 
-You can also use the GitHub Actions workflow to automatically create a new release when you push a new tag to the repository. The workflow need to be triggered manually, but you can modify to fit your needs. Also, the release is created as draft by default, so you can review and set a proper description before publish.
+### Building
 
-> Check the [`.github/workflows/publish.yml`](https://github.com/LuanRoger/electron-shadcn/blob/main/.github/workflows/publish.yaml) file for more details.
+```bash
+# Build distributable (.dmg/.zip)
+npm run make
+```
 
-When you open the app, it will check for updates automatically. If an update is available, it will download and install the update, after that, it will restart the app to apply the update. This ensure  that your users always have the latest version of your app.
+Artifacts are output to `out/make`.
 
-The auto update is implemented using [update-electron-app](https://github.com/electron/update-electron-app) to check the updates and apply them. For the publishing, it is using the [Electron Forge's GitHub publisher](https://www.electronforge.io/config/publishers/github).
+## Usage
 
-## Documentation
+### Starting the Timer
 
-Check out the full documentation [here](https://docs.luanroger.dev/electron-shadcn).
+1. Click the timer display in the top bar, or press `Cmd+Shift+T` globally
+2. Enter a description, select a project (optional), add tags (optional)
+3. Click Start
 
-## Used by
+### Creating a Project
 
-- [yaste](https://github.com/LuanRoger/yaste) - yaste (Yet another super ₛᵢₘₚₗₑ text editor) is a text editor, that can be used as an alternative to the native text editor of your SO, maybe.
-- [eletric-drizzle](https://github.com/LuanRoger/electric-drizzle) - shadcn-ui and Drizzle ORM with Electron.
-- [Wordle Game](https://github.com/masonyekta/wordle-game) - A Wordle game which features interactive gameplay, cross-platform compatibility, and integration with a custom Wordle API for word validation and letter correctness.
-- [Mehr 🌟](https://github.com/xmannii/MehrLocalChat) - A modern, elegant local AI chatbot application using Electron, React, shadcn/ui, and Ollama.
+1. Navigate to **Projects** from the sidebar
+2. Click **New project**
+3. Enter a name, choose a color, optionally link a client and hourly rate
 
-> Does you've used this template in your project? Add it here and open a PR.
+### Adding a Manual Entry
+
+1. Press `Cmd+N` from the dashboard, or click **Add manual entry**
+2. Fill in description, date, start/end times, project, and tags
+3. Click **Create Entry**
+
+### Viewing Reports
+
+1. Navigate to **Reports** from the sidebar
+2. Use the date presets (Today, This Week, This Month, Last Month) or pick a custom range
+3. Filter by project, client, or billable status
+4. Export to CSV or JSON using the **Export** dropdown
+
+### Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Cmd+K` | Open command palette |
+| `Cmd+Shift+T` | Toggle timer (global, works anywhere) |
+| `Cmd+N` | New manual entry (when app is focused) |
+
+### Settings
+
+Navigate to **Settings** to configure:
+
+- **Idle threshold** — Minutes before idle detection triggers (Disabled, 5, 10, 15, 30 min)
+- **Default billable** — Whether new entries are billable by default
+- **Week starts on** — Monday or Sunday
+- **Currency symbol** — Display currency in reports (e.g., `$`, `€`)
+- **Theme** — Light, Dark, or System
+
+## Architecture
+
+```
+src/
+├── main/
+│   ├── index.ts       # Electron main process entry
+│   ├── timer.ts       # Timer state machine
+│   ├── settings.ts    # electron-store settings
+│   ├── tray.ts        # System tray setup
+│   ├── db/
+│   │   ├── client.ts  # Drizzle SQLite connection
+│   │   └── schema.ts  # Database schema
+│   └── ipc/           # oRPC handlers
+│       ├── router.ts  # Handler registry
+│       ├── projects.ts
+│       ├── entries.ts
+│       ├── clients.ts
+│       ├── tags.ts
+│       ├── timer.ts
+│       ├── export.ts
+│       ├── settings.ts
+│       └── idle.ts
+├── renderer/
+│   ├── routes/        # TanStack Router file-based routes
+│   ├── components/    # React components
+│   └── lib/
+│       ├── api.ts     # oRPC client
+│       └── queries.ts # TanStack Query hooks
+└── preload.ts         # Context bridge (main→renderer IPC)
+```
+
+**Data Flow:** All database access happens in the main process via Drizzle. The renderer communicates through oRPC handlers registered in `src/main/ipc/router.ts`.
+
+## macOS Specifics
+
+- **Title bar** — Uses `hiddenInset` style with native traffic lights
+- **System tray** — Click the tray icon to show/hide the app
+- **Global shortcut** — `Cmd+Shift+T` toggles the timer from anywhere
+- **Notifications** — Uses native macOS notifications for timer events
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](https://github.com/LuanRoger/electron-shadcn/blob/main/LICENSE) file for details.
+MIT
