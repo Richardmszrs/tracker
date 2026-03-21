@@ -99,7 +99,7 @@ export function setupMenu(mainWindow: BrowserWindow) {
         label: "Documentation",
         click: async () => {
           await shell.openExternal(
-            "https://github.com/LuanRoger/electron-shadcn"
+            "https://github.com/RichardMeszaros/upweb-time-tracker"
           );
         },
       }),
@@ -107,7 +107,7 @@ export function setupMenu(mainWindow: BrowserWindow) {
         label: "Report Issue",
         click: async () => {
           await shell.openExternal(
-            "https://github.com/LuanRoger/electron-shadcn/issues"
+            "https://github.com/RichardMeszaros/upweb-time-tracker/issues"
           );
         },
       }),
