@@ -6,6 +6,7 @@ import {
   globalShortcut,
   Notification,
   powerMonitor,
+  Menu,
 } from "electron";
 import { ipcMain } from "electron/main";
 import {
@@ -17,16 +18,34 @@ import { ipcContext } from "@/ipc/context";
 import { IPC_CHANNELS } from "./constants";
 import { timerStateMachine } from "./main/timer";
 import { settingsStore } from "./main/settings";
+import { setupMenu } from "./main/menu";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const inDevelopment = process.env.NODE_ENV === "development";
 
-function createWindow() {
+function createWindow(): BrowserWindow {
+  // Window state persistence
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const windowStateKeeper = require("electron-window-state");
+
+  const mainWindowState = windowStateKeeper({
+    defaultWidth: 1100,
+    defaultHeight: 720,
+  });
+
   const preload = path.join(__dirname, "preload.js");
+
+  // Icon path
+  const iconPath = app.isPackaged
+    ? path.join(process.resourcesPath, "assets", "icons", "png", "512x512.png")
+    : path.join(__dirname, "../../build/icons/png/512x512.png");
+
   const mainWindow = new BrowserWindow({
-    width: 1100,
-    height: 720,
+    width: mainWindowState.width,
+    height: mainWindowState.height,
+    x: mainWindowState.x,
+    y: mainWindowState.y,
     minWidth: 800,
     minHeight: 600,
     webPreferences: {
@@ -34,18 +53,37 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: true,
       nodeIntegrationInSubFrames: false,
-
       preload,
     },
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "hidden",
-    trafficLightPosition:
-      process.platform === "darwin" ? { x: 5, y: 5 } : undefined,
+    trafficLightPosition: process.platform === "darwin" ? { x: 5, y: 5 } : undefined,
+    tabbingIdentifier: "main",
+    acceptFirstMouse: true,
+    icon: iconPath,
   });
+
+  // Restore window state
+  mainWindowState.manage(mainWindow);
 
   // macOS vibrancy glass effect
   if (process.platform === "darwin") {
     mainWindow.setVibrancy("sidebar");
+    // Set dock icon
+    const dockIconPath = app.isPackaged
+      ? path.join(process.resourcesPath, "assets", "icons", "png", "512x512.png")
+      : path.join(__dirname, "../../build/icons/png/512x512.png");
+    if (app.dock) {
+      app.dock.setIcon(dockIconPath);
+    }
   }
+
+  // Set about panel options
+  app.setAboutPanelOptions({
+    applicationName: "UPweb TimeTracker",
+    applicationVersion: app.getVersion(),
+    copyright: "Copyright © 2026 UPweb",
+  });
+
   ipcContext.setMainWindow(mainWindow);
 
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
@@ -129,6 +167,9 @@ app.whenReady().then(async () => {
 
     // Setup idle detection
     setupIdleDetection(mainWindow);
+
+    // Setup application menu
+    setupMenu(mainWindow);
 
     // Register global shortcut Cmd+Shift+T to toggle timer
     globalShortcut.register("Cmd+Shift+T", () => {

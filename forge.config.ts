@@ -1,5 +1,6 @@
 import { FuseV1Options, FuseVersion } from "@electron/fuses";
 import { MakerDeb } from "@electron-forge/maker-deb";
+import { MakerDMG } from "@electron-forge/maker-dmg";
 import { MakerRpm } from "@electron-forge/maker-rpm";
 import { MakerSquirrel } from "@electron-forge/maker-squirrel";
 import { MakerZIP } from "@electron-forge/maker-zip";
@@ -10,6 +11,12 @@ import type { ForgeConfig } from "@electron-forge/shared-types";
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    name: "UPweb TimeTracker",
+    executableName: "UPwebTimeTracker",
+    extraResource: [
+      "./build/tray-icon.png",
+      "./build/tray-icon@2x.png",
+    ],
   },
   rebuildConfig: {},
   makers: [
@@ -17,6 +24,9 @@ const config: ForgeConfig = {
     new MakerZIP({}, ["darwin"]),
     new MakerRpm({}),
     new MakerDeb({}),
+    new MakerDMG({
+      icon: "./build/icons/mac/icon.icns",
+    }),
   ],
   publishers: [
     {

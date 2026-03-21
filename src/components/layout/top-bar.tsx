@@ -14,9 +14,9 @@ export default function TopBar() {
   const title = pageTitles[location.pathname] ?? "Time Tracker";
 
   return (
-    <header className="flex h-12 items-center justify-between border-border border-b px-6">
-      <h2 className="font-semibold text-sm">{title}</h2>
-      <div className="flex items-center gap-4">
+    <header className="flex h-12 items-center justify-between border-border border-b px-6 [-webkit-app-region:drag]">
+      <h2 className="font-semibold text-sm [-webkit-app-region:no-drag]">{title}</h2>
+      <div className="flex items-center gap-4 [-webkit-app-region:no-drag]">
         <TimerDisplay />
       </div>
     </header>

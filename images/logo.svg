@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 60" width="220" height="60">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Sora:wght@200;700&amp;display=swap');
+      .up { font-family: 'Sora', 'Arial Black', sans-serif; font-weight: 700; font-size: 48px; fill: #1B96FE; letter-spacing: -2px; }
+      .web { font-family: 'Sora', 'Arial', sans-serif; font-weight: 200; font-size: 48px; fill: #111111; letter-spacing: -2px; }
+    </style>
+  </defs>
+  <!-- UP — bold, blue -->
+  <text class="up" x="0" y="48">UP</text>
+  <!-- web — light, dark -->
+  <text class="web" x="66" y="48">web</text>
+  <!-- dot -->
+  <circle cx="208" cy="44" r="6" fill="#1B96FE"/>
+</svg>

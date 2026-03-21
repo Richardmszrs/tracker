@@ -42,7 +42,11 @@ export default function Sidebar() {
     <>
       <aside className="flex h-full w-48 flex-col border-border border-r bg-sidebar py-4">
         <div className="mb-6 px-4">
-          <h1 className="font-semibold text-lg">Time Tracker</h1>
+          <img
+            src="/images/logo.svg"
+            alt="Time Tracker"
+            className="h-8 w-auto"
+          />
         </div>
         <nav className="flex flex-1 flex-col gap-0.5 px-2">
           {navItems.map((item) => {

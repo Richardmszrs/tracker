@@ -6,6 +6,7 @@ import {
   Notification,
   Tray,
 } from "electron";
+import path from "node:path";
 import { UpdateSourceType, updateElectronApp } from "update-electron-app";
 import { timerStateMachine } from "./timer";
 
@@ -15,10 +16,12 @@ let mainWindowRef: BrowserWindow | null = null;
 export function setupTray(mainWindow: BrowserWindow) {
   mainWindowRef = mainWindow;
 
-  const iconDataUrl =
-    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAAbwAAAG8B8aLcQwAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAADSSURBVDiN1ZI9DoJAEIW/WVgiYmFhYWFh4RfwAHgCLS0dPYEPgJWVhYUfQD4AC0QsgriwECzCbpYd2F025s+8yWQG+B8q4c3MBGCCxq0DbEEXsAQWwBzIAo4OQA/oAgY4AWfgDlzE7xRYiR0oA8/ABbhLsAReQKqD7wA1IAMcgaJg2L/Y4zfgJn5HYAtUY4YOsAN2wEX87oCNmMkA2+C6qJ0D1mJGDRiJGTqAGXASP0NgLWasgL7YoQO8iN8esBGzLGBb7FABPsXvENiKmRawLXaoCF/i9wZYYqYFbIsdKsKX+P0AVgqGA8qC4YoAAAAASUVORK5CYII=";
+  // Use extraResource icons in packaged app, otherwise use build folder
+  const trayIconPath = app.isPackaged
+    ? path.join(process.resourcesPath, "tray-icon.png")
+    : path.join(__dirname, "../../build/tray-icon.png");
 
-  const trayIcon = nativeImage.createFromDataURL(iconDataUrl);
+  const trayIcon = nativeImage.createFromPath(trayIconPath);
   tray = new Tray(trayIcon);
   tray.setToolTip("Time Tracker");
 
