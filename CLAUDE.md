@@ -56,9 +56,6 @@ src/
 - Use shadcn components; do not write custom CSS unless unavoidable
 - Commit after each sub-task completes cleanly
 
-## Current phase
-Phase 6 — Polish & macOS extras complete ✓
-
 ## Build
 ```bash
 nvm use 22 && npm run make    # Build .dmg/.zip distributable
