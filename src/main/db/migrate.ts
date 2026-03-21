@@ -41,6 +41,15 @@ const MIGRATIONS = [
   )`,
 ];
 
+// Indexes for query performance
+const INDEXES = [
+  `CREATE INDEX IF NOT EXISTS idx_time_entries_start_at ON tt_time_entries(start_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_time_entries_project_id ON tt_time_entries(project_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_entry_tags_entry_id ON tt_entry_tags(entry_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_entry_tags_tag_id ON tt_entry_tags(tag_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_projects_client_id ON tt_projects(client_id)`,
+];
+
 export function runMigrations() {
   const dbPath = path.join(app.getPath("userData"), "timetracker.db");
   const db = new Database(dbPath);
@@ -52,5 +61,8 @@ export function runMigrations() {
     db.exec(sql);
   }
 
-  console.log("[migrate] Database migrations complete");
+  // Create indexes (idempotent)
+  for (const sql of INDEXES) {
+    db.exec(sql);
+  }
 }
