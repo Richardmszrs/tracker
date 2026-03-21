@@ -3,7 +3,7 @@
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Sora:wght@200;700&amp;display=swap');
       .up { font-family: 'Sora', 'Arial Black', sans-serif; font-weight: 700; font-size: 48px; fill: #1B96FE; letter-spacing: -2px; }
-      .web { font-family: 'Sora', 'Arial', sans-serif; font-weight: 200; font-size: 48px; fill: #111111; letter-spacing: -2px; }
+      .web { font-family: 'Sora', 'Arial', sans-serif; font-weight: 200; font-size: 48px; fill: #ffffff; letter-spacing: -2px; }
     </style>
   </defs>
   <!-- UP — bold, blue -->

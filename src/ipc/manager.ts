@@ -34,7 +34,6 @@ class IPCManager {
     }
 
     this.clientPort.start();
-
     window.postMessage(IPC_CHANNELS.START_ORPC_SERVER, "*", [this.serverPort]);
     this.initialized = true;
   }

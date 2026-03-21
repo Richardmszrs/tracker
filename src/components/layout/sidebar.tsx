@@ -40,12 +40,17 @@ export default function Sidebar() {
 
   return (
     <>
-      <aside className="flex h-full w-48 flex-col border-border border-r bg-sidebar py-4">
-        <div className="mb-6 px-4">
+      <aside className="flex h-full w-48 flex-col border-border border-r bg-sidebar pb-4 pt-6">
+        <div className="mb-6 pl-6 pr-4">
           <img
             src="/images/logo.svg"
             alt="Time Tracker"
-            className="h-8 w-auto"
+            className="h-8 w-auto dark:hidden"
+          />
+          <img
+            src="/images/logo_white.svg"
+            alt="Time Tracker"
+            className="hidden h-8 w-auto dark:block"
           />
         </div>
         <nav className="flex flex-1 flex-col gap-0.5 px-2">

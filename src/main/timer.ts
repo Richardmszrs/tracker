@@ -97,12 +97,12 @@ class TimerStateMachine {
         billable: true,
         createdAt: startAt,
       })
-      .returning();
+      .run();
 
     if (tagIds.length > 0) {
       db.insert(entryTags).values(
         tagIds.map((tagId) => ({ entryId: id, tagId }))
-      );
+      ).run();
     }
 
     this.state = {
@@ -127,7 +127,8 @@ class TimerStateMachine {
 
     db.update(timeEntries)
       .set({ endAt })
-      .where(eq(timeEntries.id, this.state.entryId));
+      .where(eq(timeEntries.id, this.state.entryId))
+      .run();
 
     const duration = endAt.getTime() - this.state.startAt;
     const entryId = this.state.entryId;
