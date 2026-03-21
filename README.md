@@ -38,7 +38,7 @@ A native macOS time tracking application built with Electron. Track time against
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/webtimetracker.git
+git clone https://github.com/Richardmszrs/tracker.git
 cd webtimetracker
 
 # Install dependencies
