@@ -4,6 +4,7 @@ import { MakerDMG } from "@electron-forge/maker-dmg";
 import { MakerRpm } from "@electron-forge/maker-rpm";
 import { MakerSquirrel } from "@electron-forge/maker-squirrel";
 import { MakerZIP } from "@electron-forge/maker-zip";
+import AutoUnpackNativesPlugin from "@electron-forge/plugin-auto-unpack-natives";
 import { FusesPlugin } from "@electron-forge/plugin-fuses";
 import { VitePlugin } from "@electron-forge/plugin-vite";
 import type { ForgeConfig } from "@electron-forge/shared-types";
@@ -11,9 +12,17 @@ import type { ForgeConfig } from "@electron-forge/shared-types";
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    ignore: (file) => {
+      if (!file) {
+        return false;
+      }
+
+      return !(file === "/package.json" || file.startsWith("/.vite") || file.startsWith("/node_modules"));
+    },
     name: "UPweb TimeTracker",
     executableName: "UPwebTimeTracker",
     extraResource: [
+      "./build/icons/png/512x512.png",
       "./build/tray-icon.png",
       "./build/tray-icon@2x.png",
     ],
@@ -46,6 +55,7 @@ const config: ForgeConfig = {
     },
   ],
   plugins: [
+    new AutoUnpackNativesPlugin({}),
     new VitePlugin({
       build: [
         {

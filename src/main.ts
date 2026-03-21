@@ -38,7 +38,7 @@ function createWindow(): BrowserWindow {
 
   // Icon path
   const iconPath = app.isPackaged
-    ? path.join(process.resourcesPath, "assets", "icons", "png", "512x512.png")
+    ? path.join(process.resourcesPath, "512x512.png")
     : path.join(__dirname, "../../build/icons/png/512x512.png");
 
   const mainWindow = new BrowserWindow({
@@ -70,7 +70,7 @@ function createWindow(): BrowserWindow {
     mainWindow.setVibrancy("sidebar");
     // Set dock icon
     const dockIconPath = app.isPackaged
-      ? path.join(process.resourcesPath, "assets", "icons", "png", "512x512.png")
+      ? path.join(process.resourcesPath, "512x512.png")
       : path.join(__dirname, "../../build/icons/png/512x512.png");
     if (app.dock) {
       app.dock.setIcon(dockIconPath);

@@ -19,6 +19,9 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 
+const lightLogoSrc = new URL("../../../images/logo.svg", import.meta.url).href;
+const darkLogoSrc = new URL("../../../images/logo_white.svg", import.meta.url).href;
+
 const navItems = [
   { label: "Dashboard", to: "/", icon: LayoutDashboard },
   { label: "Projects", to: "/projects", icon: FolderKanban },
@@ -43,12 +46,12 @@ export default function Sidebar() {
       <aside className="flex h-full w-48 flex-col border-border border-r bg-sidebar pb-4 pt-6">
         <div className="mb-6 pl-6 pr-4">
           <img
-            src="/images/logo.svg"
+            src={lightLogoSrc}
             alt="Time Tracker"
             className="h-8 w-auto dark:hidden"
           />
           <img
-            src="/images/logo_white.svg"
+            src={darkLogoSrc}
             alt="Time Tracker"
             className="hidden h-8 w-auto dark:block"
           />
