@@ -312,7 +312,7 @@ export const invoiceGetUnbilledEntries = os
           eq(timeEntries.billable, true),
           isNull(timeEntries.invoiceId),
           isNull(timeEntries.deletedAt),
-          opt.input.clientId ? eq(timeEntries.projectId, opt.input.clientId) : undefined
+          opt.input.clientId ? eq(projects.clientId, opt.input.clientId) : undefined
         )
       )
       .all();

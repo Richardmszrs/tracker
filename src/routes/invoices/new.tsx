@@ -130,7 +130,7 @@ function NewInvoicePage() {
     navigate({ to: "/invoices" });
   };
 
-  const getEntryHours = (entry: typeof unbilledEntries extends Array<infer T> ? T : never): number => {
+  const getEntryHours = (entry: NonNullable<typeof unbilledEntries>[number]): number => {
     if (!entry.endAt) return 0;
     return (new Date(entry.endAt).getTime() - new Date(entry.startAt).getTime()) / (1000 * 60 * 60);
   };
