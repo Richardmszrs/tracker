@@ -1,19 +1,11 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { safeStorage } from "electron";
 import Store from "electron-store";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { config as loadEnv } from "dotenv";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Load environment variables from .env file in project root
-const envPath = path.join(__dirname, "../../../.env");
-loadEnv({ path: envPath });
-
+// Environment variables should be loaded automatically by Electron/Vite
+// In development, these come from the .env file via Vite's mechanism
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || process.env.SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn("Supabase credentials not found in environment variables");
@@ -27,10 +19,36 @@ const sessionStore = new Store<{ encryptedSession: string | null }>({
   },
 });
 
-export const supabase = createClient(supabaseUrl || "", supabaseAnonKey || "", {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: false, // We handle session storage ourselves
+let supabaseInstance: SupabaseClient | null = null;
+
+function initializeSupabase(): SupabaseClient {
+  if (supabaseInstance) {
+    return supabaseInstance;
+  }
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error("Supabase URL and anonymous key are required. Check your .env file.");
+  }
+
+  supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: false, // We handle session storage ourselves
+    },
+  });
+
+  return supabaseInstance;
+}
+
+export function getSupabase(): SupabaseClient {
+  return initializeSupabase();
+}
+
+// For backward compatibility, also export supabase as a function call
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const supabase: any = new Proxy({}, {
+  get(_target, prop) {
+    return (initializeSupabase() as any)[prop];
   },
 });
 

@@ -57,8 +57,10 @@ const SYNC_MIGRATIONS = [
   `ALTER TABLE tt_projects ADD COLUMN user_id text`,
   `ALTER TABLE tt_tags ADD COLUMN user_id text`,
   `ALTER TABLE tt_time_entries ADD COLUMN user_id text`,
-  `ALTER TABLE tt_entry_tags ADD COLUMN id text PRIMARY KEY`,
   `ALTER TABLE tt_entry_tags ADD COLUMN user_id text`,
+
+  // Add id column to entry_tags (without PRIMARY KEY - SQLite doesn't support it via ALTER)
+  `ALTER TABLE tt_entry_tags ADD COLUMN id text`,
 
   // Add synced_at columns
   `ALTER TABLE tt_clients ADD COLUMN synced_at integer`,
