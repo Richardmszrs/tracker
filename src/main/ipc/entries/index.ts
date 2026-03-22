@@ -1,5 +1,5 @@
 import { os } from "@orpc/server";
-import { and, eq, gte, lte } from "drizzle-orm";
+import { and, eq, gte, isNull, lte } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { getDb } from "@/main/db/client";
@@ -59,7 +59,11 @@ export const entryCreate = os
       await db
         .insert(entryTags)
         .values(
-          opt.input.tagIds.map((tagId: string) => ({ entryId: id, tagId }))
+          opt.input.tagIds.map((tagId: string) => ({
+            id: nanoid(),
+            entryId: id,
+            tagId,
+          }))
         );
     }
 
@@ -68,7 +72,7 @@ export const entryCreate = os
 
 export const entryList = os.input(entryListSchema).handler((opt) => {
   const db = getDb();
-  const conditions: ReturnType<typeof eq>[] = [];
+  const conditions: ReturnType<typeof eq>[] = [isNull(timeEntries.deletedAt)];
 
   if (opt.input.startDate) {
     conditions.push(gte(timeEntries.startAt, new Date(opt.input.startDate)));
@@ -85,7 +89,7 @@ export const entryList = os.input(entryListSchema).handler((opt) => {
       .all();
   }
 
-  return db.select().from(timeEntries).all();
+  return db.select().from(timeEntries).where(isNull(timeEntries.deletedAt)).all();
 });
 
 export const entryUpdate = os
@@ -115,7 +119,7 @@ export const entryUpdate = os
       if (tagIds.length > 0) {
         await db
           .insert(entryTags)
-          .values(tagIds.map((tagId: string) => ({ entryId: id, tagId })));
+          .values(tagIds.map((tagId: string) => ({ id: nanoid(), entryId: id, tagId })));
       }
     }
 
@@ -130,7 +134,16 @@ export const entryDelete = os
   .input(entryDeleteSchema)
   .handler(async (opt) => {
     const db = getDb();
-    await db.delete(entryTags).where(eq(entryTags.entryId, opt.input.id));
-    await db.delete(timeEntries).where(eq(timeEntries.id, opt.input.id));
+    const now = new Date();
+    // Soft delete entry tags
+    await db
+      .update(entryTags)
+      .set({ deletedAt: now })
+      .where(eq(entryTags.entryId, opt.input.id));
+    // Soft delete entry
+    await db
+      .update(timeEntries)
+      .set({ deletedAt: now })
+      .where(eq(timeEntries.id, opt.input.id));
     return { success: true };
   });

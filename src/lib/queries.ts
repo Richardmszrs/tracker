@@ -1,6 +1,112 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
 
+// Auth
+export interface AuthUser {
+  id: string;
+  email: string;
+  email_confirmed_at: string | null;
+  created_at: string;
+}
+
+export function useAuthUser() {
+  return useQuery({
+    queryKey: ["auth", "user"],
+    queryFn: () => api.auth.getUser(),
+    staleTime: 60_000,
+  });
+}
+
+export function useAuthSignIn() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { email: string; password: string }) =>
+      api.auth.signIn(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["auth"] });
+      queryClient.invalidateQueries({ queryKey: ["sync"] });
+    },
+  });
+}
+
+export function useAuthSignUp() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { email: string; password: string }) =>
+      api.auth.signUp(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["auth"] });
+      queryClient.invalidateQueries({ queryKey: ["sync"] });
+    },
+  });
+}
+
+export function useAuthSignOut() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.auth.signOut(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["auth"] });
+      queryClient.invalidateQueries({ queryKey: ["sync"] });
+    },
+  });
+}
+
+// Sync
+export interface SyncStatus {
+  lastSyncedAt: number | null;
+  isSyncing: boolean;
+  isOnline: boolean;
+  pendingCount: number;
+}
+
+export function useSyncStatus() {
+  return useQuery({
+    queryKey: ["sync", "status"],
+    queryFn: () => api.sync.getStatus(),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useSyncTrigger() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.sync.trigger(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sync"] });
+    },
+  });
+}
+
+export function useSyncSettings() {
+  return useQuery({
+    queryKey: ["sync", "settings"],
+    queryFn: () => api.sync.getSettings(),
+    staleTime: Infinity,
+  });
+}
+
+export function useSyncUpdateFrequency() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { frequency: "1" | "5" | "15" | "manual" }) =>
+      api.sync.updateFrequency(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sync", "settings"] });
+    },
+  });
+}
+
+export function useSyncUpdateOnFocus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { enabled: boolean }) => api.sync.updateOnFocus(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sync", "settings"] });
+    },
+  });
+}
+
 // Timer
 export function useTimerState() {
   return useQuery({
