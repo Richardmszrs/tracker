@@ -409,7 +409,7 @@ function InvoiceDetailPage() {
   );
 }
 
-export const Route = createFileRoute("/invoices/$id")({
+export const Route = createFileRoute("/invoices/$id/")({
   component: () => (
     <ErrorBoundary>
       <InvoiceDetailPage />
