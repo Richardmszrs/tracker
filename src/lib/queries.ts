@@ -371,3 +371,131 @@ export function useSettingsUpdate() {
     },
   });
 }
+
+// Invoices
+export interface Invoice {
+  id: string;
+  number: string;
+  status: "draft" | "sent" | "paid" | "overdue";
+  issueDate: Date;
+  dueDate: Date;
+  currency: string;
+  taxRate: number;
+  discount: number;
+  notes: string | null;
+  clientId: string | null;
+  paidAt: Date | null;
+  createdAt: Date;
+}
+
+export interface InvoiceItem {
+  id: string;
+  invoiceId: string;
+  entryId: string | null;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  amount: number;
+}
+
+export interface InvoiceWithDetails extends Invoice {
+  items: InvoiceItem[];
+  client: {
+    id: string;
+    name: string;
+  } | null;
+}
+
+export interface InvoiceListFilters {
+  status?: "draft" | "sent" | "paid" | "overdue";
+  startDate?: number;
+  endDate?: number;
+  clientId?: string;
+}
+
+export function useInvoices(filters?: InvoiceListFilters) {
+  return useQuery({
+    queryKey: ["invoices", filters],
+    queryFn: () => api.invoices.list({
+      status: filters?.status,
+      startDate: filters?.startDate,
+      endDate: filters?.endDate,
+      clientId: filters?.clientId,
+    }),
+    staleTime: 30_000,
+  });
+}
+
+export function useInvoice(id: string) {
+  return useQuery({
+    queryKey: ["invoices", id],
+    queryFn: () => api.invoices.get({ id }),
+    enabled: !!id,
+  });
+}
+
+export function useInvoiceCreate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      clientId: string;
+      entryIds: string[];
+      issueDate: number;
+      dueDate: number;
+      notes?: string;
+      taxRate?: number;
+      discount?: number;
+      currency?: string;
+    }) => api.invoices.create(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["entries"] });
+    },
+  });
+}
+
+export function useInvoiceUpdate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      id: string;
+      status?: "draft" | "sent" | "paid" | "overdue";
+      issueDate?: number;
+      dueDate?: number;
+      notes?: string;
+      taxRate?: number;
+      discount?: number;
+      currency?: string;
+    }) => api.invoices.update(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+    },
+  });
+}
+
+export function useInvoiceDelete() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: string }) => api.invoices.delete(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["entries"] });
+    },
+  });
+}
+
+export function useInvoiceNextNumber() {
+  return useQuery({
+    queryKey: ["invoices", "nextNumber"],
+    queryFn: () => api.invoices.getNextNumber(),
+    staleTime: Infinity,
+  });
+}
+
+export function useUnbilledEntries(clientId: string) {
+  return useQuery({
+    queryKey: ["invoices", "unbilledEntries", clientId],
+    queryFn: () => api.invoices.getUnbilledEntries({ clientId }),
+    enabled: !!clientId,
+  });
+}

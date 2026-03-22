@@ -30,6 +30,7 @@ const MIGRATIONS = [
     end_at integer,
     project_id text,
     billable integer DEFAULT 1 NOT NULL,
+    invoice_id text,
     created_at integer NOT NULL,
     FOREIGN KEY (project_id) REFERENCES tt_projects(id)
   )`,
@@ -38,6 +39,38 @@ const MIGRATIONS = [
     tag_id text NOT NULL,
     FOREIGN KEY (entry_id) REFERENCES tt_time_entries(id),
     FOREIGN KEY (tag_id) REFERENCES tt_tags(id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS tt_invoices (
+    id text PRIMARY KEY NOT NULL,
+    user_id text,
+    number text NOT NULL,
+    client_id text,
+    status text DEFAULT 'draft' NOT NULL,
+    issue_date integer NOT NULL,
+    due_date integer NOT NULL,
+    notes text,
+    tax_rate real DEFAULT 0 NOT NULL,
+    discount real DEFAULT 0 NOT NULL,
+    currency text DEFAULT 'USD' NOT NULL,
+    paid_at integer,
+    synced_at integer,
+    deleted_at integer,
+    created_at integer NOT NULL,
+    FOREIGN KEY (client_id) REFERENCES tt_clients(id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS tt_invoice_items (
+    id text PRIMARY KEY NOT NULL,
+    user_id text,
+    invoice_id text,
+    entry_id text,
+    description text NOT NULL,
+    quantity real NOT NULL,
+    unit_price real NOT NULL,
+    amount real NOT NULL,
+    synced_at integer,
+    deleted_at integer,
+    FOREIGN KEY (invoice_id) REFERENCES tt_invoices(id),
+    FOREIGN KEY (entry_id) REFERENCES tt_time_entries(id)
   )`,
 ];
 
@@ -78,6 +111,19 @@ const SYNC_MIGRATIONS = [
 
   // Add created_at to tags if it doesn't exist (for new schema alignment)
   `ALTER TABLE tt_tags ADD COLUMN created_at integer`,
+
+  // Add invoice_id to time_entries (for marking entries as invoiced)
+  `ALTER TABLE tt_time_entries ADD COLUMN invoice_id text`,
+
+  // Invoice tables columns (for existing installations)
+  `ALTER TABLE tt_invoices ADD COLUMN user_id text`,
+  `ALTER TABLE tt_invoices ADD COLUMN synced_at integer`,
+  `ALTER TABLE tt_invoices ADD COLUMN deleted_at integer`,
+  `ALTER TABLE tt_invoices ADD COLUMN paid_at integer`,
+
+  `ALTER TABLE tt_invoice_items ADD COLUMN user_id text`,
+  `ALTER TABLE tt_invoice_items ADD COLUMN synced_at integer`,
+  `ALTER TABLE tt_invoice_items ADD COLUMN deleted_at integer`,
 ];
 
 export function runMigrations() {
