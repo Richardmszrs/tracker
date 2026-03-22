@@ -7,7 +7,16 @@
 - shadcn/ui + Tailwind 4 + Lucide icons
 - oRPC over Electron IPC (type-safe main ↔ renderer)
 - Drizzle ORM + better-sqlite3 (main process only)
+- Supabase (auth + remote sync)
 - Vitest (unit), Playwright (e2e)
+
+## Environment variables
+```bash
+SUPABASE_URL=https://xxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your-anon-key
+SUPABASE_DB_URL=postgresql://postgres:password@db.xxxx.supabase.co:5432/postgres
+```
+Note: Never expose Supabase credentials to the renderer process.
 
 ## Project structure
 src/
@@ -16,14 +25,21 @@ src/
     db/
       client.ts       # SQLite connection (app.getPath('userData'))
       schema.ts       # Drizzle schema
-      migrations/     # Drizzle-kit output
+      migrate.ts      # Inline migrations
     timer.ts          # Timer state machine
+    supabase/
+      client.ts       # Supabase client initialization
+      auth.ts         # Auth functions (signIn, signUp, signOut, getSession)
+      sync.ts         # SyncEngine for bidirectional sync
+      remote-schema.sql # Postgres schema for Supabase
     ipc/
       router.ts       # oRPC router (all handlers)
-      projects.ts
-      entries.ts
-      clients.ts
-      tags.ts
+      auth/           # Auth oRPC handlers
+      sync/           # Sync oRPC handlers
+      projects/
+      entries/
+      clients/
+      tags/
   renderer/
     routes/           # TanStack Router file-based routes
       index.tsx       # Dashboard / timer
@@ -31,21 +47,31 @@ src/
       clients.tsx
       tags.tsx
       reports.tsx
-      settings.tsx    # App settings (idle threshold, theme, etc.)
+      settings.tsx    # App settings (idle threshold, theme, sync, etc.)
     components/
+      sync/
+        sync-indicator.tsx  # Sync status UI component
       timer/
       projects/
       reports/
     lib/
       api.ts          # oRPC client
-      queries.ts      # TanStack Query hooks
+      queries.ts      # TanStack Query hooks (includes auth/sync hooks)
 
 ## DB schema tables
-- time_entries: id, description, startAt, endAt, projectId, billable, createdAt
-- projects: id, name, color, clientId, hourlyRate, archived
-- clients: id, name
-- tags: id, name
-- entry_tags: entryId, tagId
+- time_entries: id, userId, description, startAt, endAt, projectId, billable, createdAt, syncedAt, deletedAt
+- projects: id, userId, name, color, clientId, hourlyRate, archived, createdAt, syncedAt, deletedAt
+- clients: id, userId, name, createdAt, syncedAt, deletedAt
+- tags: id, userId, name, createdAt, syncedAt, deletedAt
+- entry_tags: id, userId, entryId, tagId, syncedAt, deletedAt
+
+## Sync behavior
+- SQLite is the primary store and source of truth
+- Supabase Postgres is the remote backup/sync target
+- App works fully offline (local-only mode when not authenticated)
+- Sync only runs when internet is available (net.isOnline())
+- Conflict resolution: last-write-wins based on updatedAt timestamp
+- Soft deletes: deletedAt column replaces hard DELETE queries
 
 ## Rules
 - DB is ONLY accessed in main process via Drizzle. Never import DB in renderer.
@@ -67,3 +93,7 @@ npm run test:all              # Run vitest + playwright e2e
 - Tray icon: src/main/tray.ts
 - Global shortcut: Cmd+Shift+T toggles timer
 - DB path: app.getPath('userData') + '/timetracker.db'
+
+## Phases
+- Phase 1-6: Core app features (timer, projects, clients, tags, reports, settings)
+- Phase 7: Supabase local-first sync ✅

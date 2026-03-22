@@ -2,6 +2,7 @@ import { app } from "electron";
 import fs from "node:fs";
 import path from "node:path";
 import { eq } from "drizzle-orm";
+import { nanoid } from "nanoid";
 import { getDb } from "./db/client";
 import { entryTags, timeEntries } from "./db/schema";
 
@@ -101,7 +102,7 @@ class TimerStateMachine {
 
     if (tagIds.length > 0) {
       db.insert(entryTags).values(
-        tagIds.map((tagId) => ({ entryId: id, tagId }))
+        tagIds.map((tagId) => ({ id: nanoid(), entryId: id, tagId }))
       ).run();
     }
 

@@ -1,5 +1,5 @@
 import { os } from "@orpc/server";
-import { eq } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { getDb } from "@/main/db/client";
@@ -33,7 +33,7 @@ export const clientCreate = os
 
 export const clientList = os.handler(() => {
   const db = getDb();
-  return db.select().from(clients).all();
+  return db.select().from(clients).where(isNull(clients.deletedAt)).all();
 });
 
 export const clientUpdate = os
@@ -59,6 +59,9 @@ export const clientDelete = os
   .input(clientDeleteSchema)
   .handler(async (opt) => {
     const db = getDb();
-    await db.delete(clients).where(eq(clients.id, opt.input.id));
+    await db
+      .update(clients)
+      .set({ deletedAt: new Date() })
+      .where(eq(clients.id, opt.input.id));
     return { success: true };
   });

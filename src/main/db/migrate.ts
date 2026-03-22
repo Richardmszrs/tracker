@@ -50,6 +50,34 @@ const INDEXES = [
   `CREATE INDEX IF NOT EXISTS idx_projects_client_id ON tt_projects(client_id)`,
 ];
 
+// Sync columns migration (v2)
+const SYNC_MIGRATIONS = [
+  // Add user_id columns
+  `ALTER TABLE tt_clients ADD COLUMN user_id text`,
+  `ALTER TABLE tt_projects ADD COLUMN user_id text`,
+  `ALTER TABLE tt_tags ADD COLUMN user_id text`,
+  `ALTER TABLE tt_time_entries ADD COLUMN user_id text`,
+  `ALTER TABLE tt_entry_tags ADD COLUMN id text PRIMARY KEY`,
+  `ALTER TABLE tt_entry_tags ADD COLUMN user_id text`,
+
+  // Add synced_at columns
+  `ALTER TABLE tt_clients ADD COLUMN synced_at integer`,
+  `ALTER TABLE tt_projects ADD COLUMN synced_at integer`,
+  `ALTER TABLE tt_tags ADD COLUMN synced_at integer`,
+  `ALTER TABLE tt_time_entries ADD COLUMN synced_at integer`,
+  `ALTER TABLE tt_entry_tags ADD COLUMN synced_at integer`,
+
+  // Add deleted_at columns for soft deletes
+  `ALTER TABLE tt_clients ADD COLUMN deleted_at integer`,
+  `ALTER TABLE tt_projects ADD COLUMN deleted_at integer`,
+  `ALTER TABLE tt_tags ADD COLUMN deleted_at integer`,
+  `ALTER TABLE tt_time_entries ADD COLUMN deleted_at integer`,
+  `ALTER TABLE tt_entry_tags ADD COLUMN deleted_at integer`,
+
+  // Add created_at to tags if it doesn't exist (for new schema alignment)
+  `ALTER TABLE tt_tags ADD COLUMN created_at integer`,
+];
+
 export function runMigrations() {
   const dbPath = path.join(app.getPath("userData"), "timetracker.db");
   const db = new Database(dbPath);
@@ -64,5 +92,15 @@ export function runMigrations() {
   // Create indexes (idempotent)
   for (const sql of INDEXES) {
     db.exec(sql);
+  }
+
+  // Run sync column migrations if needed
+  for (const sql of SYNC_MIGRATIONS) {
+    try {
+      db.exec(sql);
+    } catch {
+      // Ignore errors from ALTER TABLE if column already exists
+      // SQLite doesn't support IF NOT EXISTS for ALTER TABLE ADD COLUMN
+    }
   }
 }

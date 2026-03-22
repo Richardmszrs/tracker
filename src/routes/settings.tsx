@@ -7,8 +7,23 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { useSettings, useSettingsUpdate, type AppSettings } from "@/lib/queries";
+import { Input } from "@/components/ui/input";
+import {
+  useSettings,
+  useSettingsUpdate,
+  useAuthUser,
+  useAuthSignIn,
+  useAuthSignUp,
+  useAuthSignOut,
+  useSyncStatus,
+  useSyncTrigger,
+  useSyncSettings,
+  useSyncUpdateFrequency,
+  useSyncUpdateOnFocus,
+  type AppSettings,
+} from "@/lib/queries";
 import { setTheme } from "@/actions/theme";
+import { Loader2 } from "lucide-react";
 
 const IDLE_OPTIONS = [
   { label: "Disabled", value: 0 },
@@ -33,6 +48,24 @@ function SettingsPage() {
   const { data: settings, isLoading } = useSettings();
   const updateMutation = useSettingsUpdate();
 
+  // Auth and sync state
+  const { data: authData } = useAuthUser();
+  const { data: syncStatus } = useSyncStatus();
+  const { data: syncSettings } = useSyncSettings();
+  const signInMutation = useAuthSignIn();
+  const signUpMutation = useAuthSignUp();
+  const signOutMutation = useAuthSignOut();
+  const syncTriggerMutation = useSyncTrigger();
+  const syncFrequencyMutation = useSyncUpdateFrequency();
+  const syncOnFocusMutation = useSyncUpdateOnFocus();
+
+  const [syncEmail, setSyncEmail] = useState("");
+  const [syncPassword, setSyncPassword] = useState("");
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+
+  const user = authData?.user;
+  const isAuthenticated = !!user;
+
   if (isLoading || !settings) {
     return (
       <div className="flex items-center justify-center py-12 text-muted-foreground text-xs">
@@ -48,9 +81,180 @@ function SettingsPage() {
     }
   };
 
+  const handleAuthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (authMode === "signin") {
+      await signInMutation.mutateAsync({ email: syncEmail, password: syncPassword });
+    } else {
+      await signUpMutation.mutateAsync({ email: syncEmail, password: syncPassword });
+    }
+    setSyncEmail("");
+    setSyncPassword("");
+  };
+
+  const handleSyncNow = () => {
+    syncTriggerMutation.mutate();
+  };
+
+  const handleFrequencyChange = (value: string) => {
+    syncFrequencyMutation.mutate({ frequency: value as "1" | "5" | "15" | "manual" });
+  };
+
+  const handleOnFocusChange = (enabled: boolean) => {
+    syncOnFocusMutation.mutate({ enabled });
+  };
+
   return (
     <div className="flex flex-col gap-6 max-w-xl">
       <h3 className="text-sm font-medium">Settings</h3>
+
+      {/* Account & Sync */}
+      <div className="flex flex-col gap-4">
+        <div>
+          <h4 className="text-xs font-medium mb-3">Account & Sync</h4>
+
+          {isAuthenticated ? (
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-0.5">
+                  <Label>Signed in as</Label>
+                  <span className="text-[0.625rem] text-muted-foreground truncate max-w-[200px]">
+                    {user?.email}
+                  </span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => signOutMutation.mutate()}
+                  disabled={signOutMutation.isPending}
+                >
+                  Sign out
+                </Button>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-0.5">
+                  <Label>Last synced</Label>
+                  <span className="text-[0.625rem] text-muted-foreground">
+                    {syncStatus?.lastSyncedAt
+                      ? new Date(syncStatus.lastSyncedAt).toLocaleString()
+                      : "Never"}
+                  </span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleSyncNow}
+                  disabled={syncTriggerMutation.isPending || !syncStatus?.isOnline}
+                >
+                  {syncTriggerMutation.isPending ? (
+                    <Loader2 className="size-3 animate-spin mr-1" />
+                  ) : null}
+                  Sync now
+                </Button>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-0.5">
+                  <Label htmlFor="sync-frequency">Sync frequency</Label>
+                </div>
+                <select
+                  id="sync-frequency"
+                  className="h-7 rounded-md border border-input bg-input/20 px-2 text-xs"
+                  value={
+                    syncSettings?.frequency === 60000
+                      ? "1"
+                      : syncSettings?.frequency === 300000
+                        ? "5"
+                        : syncSettings?.frequency === 900000
+                          ? "15"
+                          : "manual"
+                  }
+                  onChange={(e) => handleFrequencyChange(e.target.value)}
+                >
+                  <option value="1">Every 1 min</option>
+                  <option value="5">Every 5 min</option>
+                  <option value="15">Every 15 min</option>
+                  <option value="manual">Manual only</option>
+                </select>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-0.5">
+                  <Label htmlFor="sync-on-focus">Sync on app focus</Label>
+                  <span className="text-[0.625rem] text-muted-foreground">
+                    Sync when switching to the app
+                  </span>
+                </div>
+                <Switch
+                  id="sync-on-focus"
+                  checked={syncSettings?.syncOnFocus ?? true}
+                  onCheckedChange={handleOnFocusChange}
+                />
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleAuthSubmit} className="flex flex-col gap-3">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="sync-email" className="text-xs">
+                  Email
+                </Label>
+                <Input
+                  id="sync-email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={syncEmail}
+                  onChange={(e) => setSyncEmail(e.target.value)}
+                  required
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="sync-password" className="text-xs">
+                  Password
+                </Label>
+                <Input
+                  id="sync-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={syncPassword}
+                  onChange={(e) => setSyncPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="submit"
+                  size="sm"
+                  className="flex-1"
+                  disabled={signInMutation.isPending || signUpMutation.isPending}
+                >
+                  {authMode === "signin" ? "Sign in" : "Sign up"}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    setAuthMode(authMode === "signin" ? "signup" : "signin")
+                  }
+                >
+                  {authMode === "signin" ? "Sign up" : "Sign in"}
+                </Button>
+              </div>
+              {(signInMutation.error || signUpMutation.error) && (
+                <p className="text-xs text-red-500">
+                  {signInMutation.error?.message || signUpMutation.error?.message}
+                </p>
+              )}
+            </form>
+          )}
+        </div>
+      </div>
+
+      <Separator />
 
       {/* Timer */}
       <div className="flex flex-col gap-4">

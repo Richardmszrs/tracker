@@ -21,6 +21,19 @@ import { timerGetState, timerStart, timerStop } from "@/main/ipc/timer";
 import { exportEntries } from "@/main/ipc/export";
 import { settingsGet, settingsUpdate } from "@/main/ipc/settings";
 import { idleDiscardTime } from "@/main/ipc/idle";
+import {
+  authSignIn,
+  authSignUp,
+  authSignOut,
+  authGetUser,
+} from "@/main/ipc/auth";
+import {
+  syncGetStatus,
+  syncTrigger,
+  syncUpdateFrequency,
+  syncUpdateOnFocus,
+  syncGetSettings,
+} from "@/main/ipc/sync";
 import { app } from "./app";
 import { shell } from "./shell";
 import { theme } from "./theme";
@@ -66,5 +79,18 @@ export const router = {
     start: timerStart,
     stop: timerStop,
     getState: timerGetState,
+  },
+  auth: {
+    signIn: authSignIn,
+    signUp: authSignUp,
+    signOut: authSignOut,
+    getUser: authGetUser,
+  },
+  sync: {
+    getStatus: syncGetStatus,
+    trigger: syncTrigger,
+    updateFrequency: syncUpdateFrequency,
+    updateOnFocus: syncUpdateOnFocus,
+    getSettings: syncGetSettings,
   },
 };

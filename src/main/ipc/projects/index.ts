@@ -1,5 +1,5 @@
 import { os } from "@orpc/server";
-import { eq } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { getDb } from "@/main/db/client";
@@ -47,7 +47,7 @@ export const projectCreate = os
 
 export const projectList = os.handler(() => {
   const db = getDb();
-  return db.select().from(projects).all();
+  return db.select().from(projects).where(isNull(projects.deletedAt)).all();
 });
 
 export const projectUpdate = os
@@ -88,6 +88,9 @@ export const projectDelete = os
   .input(projectDeleteSchema)
   .handler(async (opt) => {
     const db = getDb();
-    await db.delete(projects).where(eq(projects.id, opt.input.id));
+    await db
+      .update(projects)
+      .set({ deletedAt: new Date() })
+      .where(eq(projects.id, opt.input.id));
     return { success: true };
   });

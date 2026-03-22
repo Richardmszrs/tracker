@@ -18,6 +18,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { SyncIndicator } from "@/components/sync/sync-indicator";
 
 const lightLogoSrc = new URL("../../../images/logo.svg", import.meta.url).href;
 const darkLogoSrc = new URL("../../../images/logo_white.svg", import.meta.url).href;
@@ -77,6 +78,10 @@ export default function Sidebar() {
           })}
         </nav>
         <div className="flex flex-col gap-0.5 px-2">
+          <div className="flex items-center justify-between px-3 py-2">
+            <span className="text-xs text-muted-foreground">Sync</span>
+            <SyncIndicator />
+          </div>
           <Link
             className={cn(
               "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors",

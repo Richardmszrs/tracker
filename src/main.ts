@@ -9,6 +9,7 @@ import {
   Menu,
 } from "electron";
 import { ipcMain } from "electron/main";
+import { net } from "electron";
 import {
   installExtension,
   REACT_DEVELOPER_TOOLS,
@@ -19,6 +20,9 @@ import { IPC_CHANNELS } from "./constants";
 import { timerStateMachine } from "./main/timer";
 import { settingsStore } from "./main/settings";
 import { setupMenu } from "./main/menu";
+import { syncEngine } from "./main/supabase/sync";
+import { getSession } from "./main/supabase/auth";
+import Store from "electron-store";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -151,6 +155,60 @@ function setupIdleDetection(mainWindow: BrowserWindow) {
   });
 }
 
+let syncInterval: NodeJS.Timeout | null = null;
+const lastFocusSyncStore = new Store<{ lastFocusSync: number }>({
+  name: "sync-focus-store",
+  defaults: { lastFocusSync: 0 },
+});
+
+function setupSyncTriggers(mainWindow: BrowserWindow) {
+  // On app focus: sync if last sync was more than 60 seconds ago
+  app.on("browser-window-focus", () => {
+    if (!net.isOnline()) return;
+    if (!syncEngine.getSyncOnFocus()) return;
+
+    const lastFocusSync = lastFocusSyncStore.get("lastFocusSync");
+    const now = Date.now();
+    if (now - lastFocusSync > 60 * 1000) {
+      lastFocusSyncStore.set("lastFocusSync", now);
+      syncEngine.sync().catch((err) =>
+        console.error("Focus sync failed:", err)
+      );
+    }
+  });
+
+  // Sync interval every 5 minutes (or configured frequency)
+  const startSyncInterval = () => {
+    if (syncInterval) clearInterval(syncInterval);
+    const frequency = syncEngine.getSyncFrequency();
+    syncInterval = setInterval(() => {
+      if (net.isOnline()) {
+        syncEngine.sync().catch((err) =>
+          console.error("Interval sync failed:", err)
+        );
+      }
+    }, frequency);
+  };
+
+  startSyncInterval();
+
+  // Initial sync after 2 second delay if authenticated
+  setTimeout(async () => {
+    const { user } = await getSession();
+    if (user && net.isOnline()) {
+      syncEngine.setUser(user);
+      syncEngine.sync().catch((err) =>
+        console.error("Initial sync failed:", err)
+      );
+    }
+  }, 2000);
+
+  // Listen for sync frequency changes
+  ipcMain.on("sync-frequency-changed", () => {
+    startSyncInterval();
+  });
+}
+
 app.whenReady().then(async () => {
   try {
     // Run migrations before creating window
@@ -170,6 +228,9 @@ app.whenReady().then(async () => {
 
     // Setup application menu
     setupMenu(mainWindow);
+
+    // Setup sync triggers
+    setupSyncTriggers(mainWindow);
 
     // Register global shortcut Cmd+Shift+T to toggle timer
     globalShortcut.register("Cmd+Shift+T", () => {
