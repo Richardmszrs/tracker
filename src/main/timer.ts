@@ -12,12 +12,14 @@ export interface TimerState {
   entryId: string | null;
   description: string;
   projectId: string | null;
+  taskId: string | null;
   tagIds: string[];
 }
 
 interface PersistedTimerState {
   description: string;
   projectId: string | null;
+  taskId: string | null;
 }
 
 const defaultState: TimerState = {
@@ -26,6 +28,7 @@ const defaultState: TimerState = {
   entryId: null,
   description: "",
   projectId: null,
+  taskId: null,
   tagIds: [],
 };
 
@@ -58,6 +61,7 @@ class TimerStateMachine {
           ...defaultState,
           description: data.description ?? "",
           projectId: data.projectId ?? null,
+          taskId: data.taskId ?? null,
         };
       }
     } catch {
@@ -72,6 +76,7 @@ class TimerStateMachine {
       const toSave: PersistedTimerState = {
         description: this.state.description,
         projectId: this.state.projectId,
+        taskId: this.state.taskId,
       };
       fs.writeFileSync(filePath, JSON.stringify(toSave));
     } catch {
@@ -79,7 +84,7 @@ class TimerStateMachine {
     }
   }
 
-  start(description: string, projectId: string | null, tagIds: string[] = []): string {
+  start(description: string, projectId: string | null, tagIds: string[] = [], taskId: string | null = null): string {
     if (this.state.running) {
       throw new Error("Timer is already running");
     }
@@ -95,6 +100,7 @@ class TimerStateMachine {
         startAt,
         endAt: null,
         projectId: projectId ?? null,
+        taskId: taskId ?? null,
         billable: true,
         createdAt: startAt,
       })
@@ -112,6 +118,7 @@ class TimerStateMachine {
       entryId: id,
       description,
       projectId,
+      taskId,
       tagIds,
     };
     this.persistState();
@@ -140,6 +147,7 @@ class TimerStateMachine {
       entryId: null,
       description: this.state.description,
       projectId: this.state.projectId,
+      taskId: null,
       tagIds: [],
     };
     this.persistState();

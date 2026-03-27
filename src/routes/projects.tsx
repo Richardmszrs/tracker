@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PlusIcon, ArchiveIcon, EyeIcon } from "lucide-react";
+import { PlusIcon, ArchiveIcon, EyeIcon, LayoutGridIcon } from "lucide-react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -151,6 +151,17 @@ function ProjectsPage() {
                   )}
                 </TableCell>
                 <TableCell>
+                  <Button
+                    size="icon-xs"
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.location.href = `/projects/${project.id}/board`;
+                    }}
+                    title="Board"
+                  >
+                    <LayoutGridIcon className="size-3" />
+                  </Button>
                   <Button
                     size="icon-xs"
                     variant="ghost"

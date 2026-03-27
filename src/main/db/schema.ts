@@ -45,6 +45,7 @@ export const timeEntries = createTable("time_entries", {
   startAt: integer("start_at", { mode: "timestamp" }).notNull(),
   endAt: integer("end_at", { mode: "timestamp" }),
   projectId: text("project_id").references(() => projects.id),
+  taskId: text("task_id"),
   billable: integer("billable", { mode: "boolean" }).default(true).notNull(),
   invoiceId: text("invoice_id").references(() => invoices.id),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
@@ -95,4 +96,52 @@ export const invoiceItems = createTable("invoice_items", {
   syncedAt: integer("synced_at", { mode: "timestamp" }),
   deletedAt: integer("deleted_at", { mode: "timestamp" }),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});
+
+export const boards = createTable("boards", {
+  id: text("id").primaryKey(),
+  userId: text("user_id"),
+  projectId: text("project_id").references(() => projects.id).notNull(),
+  name: text("name").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  syncedAt: integer("synced_at", { mode: "timestamp" }),
+  deletedAt: integer("deleted_at", { mode: "timestamp" }),
+});
+
+export const columns = createTable("columns", {
+  id: text("id").primaryKey(),
+  userId: text("user_id"),
+  boardId: text("board_id").references(() => boards.id).notNull(),
+  name: text("name").notNull(),
+  order: integer("order").notNull(),
+  color: text("color").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  syncedAt: integer("synced_at", { mode: "timestamp" }),
+  deletedAt: integer("deleted_at", { mode: "timestamp" }),
+});
+
+export const tasks = createTable("tasks", {
+  id: text("id").primaryKey(),
+  userId: text("user_id"),
+  columnId: text("column_id").references(() => columns.id).notNull(),
+  boardId: text("board_id").references(() => boards.id).notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  order: integer("order").notNull(),
+  priority: text("priority", { enum: ["none", "low", "medium", "high", "urgent"] }).default("none").notNull(),
+  dueDate: integer("due_date", { mode: "timestamp" }),
+  assignee: text("assignee"),
+  estimatedMinutes: integer("estimated_minutes"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  syncedAt: integer("synced_at", { mode: "timestamp" }),
+  deletedAt: integer("deleted_at", { mode: "timestamp" }),
+});
+
+export const taskTags = createTable("task_tags", {
+  id: text("id").primaryKey(),
+  userId: text("user_id"),
+  taskId: text("task_id").references(() => tasks.id).notNull(),
+  tagId: text("tag_id").references(() => tags.id).notNull(),
+  syncedAt: integer("synced_at", { mode: "timestamp" }),
+  deletedAt: integer("deleted_at", { mode: "timestamp" }),
 });

@@ -78,7 +78,7 @@ export async function getSession(): Promise<{ user: AuthUser | null; error: stri
 export type AuthCallback = (user: AuthUser | null) => void;
 
 export function onAuthStateChange(callback: AuthCallback): () => void {
-  const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+  const { data } = supabase.auth.onAuthStateChange(async (event: string, session: { user: AuthUser | null } | null) => {
     if (session) {
       await saveSession(session);
       callback(session.user as AuthUser);

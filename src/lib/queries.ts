@@ -119,7 +119,7 @@ export function useTimerState() {
 export function useTimerStart() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { description: string; projectId?: string | null; tagIds?: string[] }) =>
+    mutationFn: (input: { description: string; projectId?: string | null; tagIds?: string[]; taskId?: string | null }) =>
       api.timer.start(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["timer"] });
@@ -497,5 +497,192 @@ export function useUnbilledEntries(clientId: string) {
     queryKey: ["invoices", "unbilledEntries", clientId],
     queryFn: () => api.invoices.getUnbilledEntries({ clientId }),
     enabled: !!clientId,
+  });
+}
+
+// Boards
+export function useBoard(id: string | null) {
+  return useQuery({
+    queryKey: ["boards", id],
+    queryFn: () => api.boards.get({ id: id! }),
+    enabled: !!id,
+    staleTime: 10_000,
+  });
+}
+
+export function useBoards(projectId: string) {
+  return useQuery({
+    queryKey: ["boards", "list", projectId],
+    queryFn: () => api.boards.list({ projectId }),
+    staleTime: 30_000,
+    gcTime: 300_000,
+  });
+}
+
+export function useBoardCreate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { projectId: string; name: string }) =>
+      api.boards.create(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["boards"] });
+    },
+  });
+}
+
+// Columns
+export function useColumnCreate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { boardId: string; name: string; color: string }) =>
+      api.columns.create(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["boards"] });
+    },
+  });
+}
+
+export function useColumnUpdate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: string; name?: string; color?: string }) =>
+      api.columns.update(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["boards"] });
+    },
+  });
+}
+
+export function useColumnDelete() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: string }) =>
+      api.columns.delete(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["boards"] });
+    },
+  });
+}
+
+export function useColumnReorder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { boardId: string; orderedIds: string[] }) =>
+      api.columns.reorder(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["boards"] });
+    },
+  });
+}
+
+// Tasks
+export function useTask(id: string | null) {
+  return useQuery({
+    queryKey: ["tasks", id],
+    queryFn: () => api.tasks.get({ id: id! }),
+    enabled: !!id,
+    staleTime: 10_000,
+  });
+}
+
+export function useTaskCreate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      columnId: string;
+      boardId: string;
+      title: string;
+      description?: string;
+      priority?: "none" | "low" | "medium" | "high" | "urgent";
+      dueDate?: number;
+      assignee?: string;
+      estimatedMinutes?: number;
+      tagIds?: string[];
+    }) => api.tasks.create(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["boards"] });
+    },
+  });
+}
+
+export function useTaskUpdate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      id: string;
+      title?: string;
+      description?: string | null;
+      columnId?: string;
+      boardId?: string;
+      priority?: "none" | "low" | "medium" | "high" | "urgent";
+      dueDate?: number | null;
+      assignee?: string | null;
+      estimatedMinutes?: number | null;
+      tagIds?: string[];
+    }) => api.tasks.update(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["boards"] });
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    },
+  });
+}
+
+export function useTaskDelete() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: string }) =>
+      api.tasks.delete(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["boards"] });
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    },
+  });
+}
+
+export function useTaskMove() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: string; targetColumnId: string; newOrder: number }) =>
+      api.tasks.move(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["boards"] });
+    },
+  });
+}
+
+export function useTaskReorder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { columnId: string; orderedIds: string[] }) =>
+      api.tasks.reorder(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["boards"] });
+    },
+  });
+}
+
+// Tasks due today or overdue (for dashboard)
+export function useMyTasks() {
+  return useQuery({
+    queryKey: ["tasks", "myTasks"],
+    queryFn: async () => {
+      // Get all boards and their tasks
+      const boards = await api.boards.list({ projectId: "" });
+      const allTasks: Array<{
+        id: string;
+        title: string;
+        priority: string;
+        dueDate: number | null;
+        boardId: string;
+        columnId: string;
+        projectId: string;
+        projectColor: string;
+      }> = [];
+
+      // This is a simplified version - in a real app we'd have a dedicated endpoint
+      return allTasks;
+    },
+    staleTime: 30_000,
+    enabled: false, // Disabled by default, enable when needed
   });
 }
