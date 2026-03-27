@@ -23,7 +23,7 @@ import { KanbanColumn } from "@/components/board/kanban-column";
 import { TaskCard } from "@/components/board/task-card";
 import { TaskDetailSheet } from "@/components/board/task-detail-sheet";
 import { ColumnDialog } from "@/components/board/column-dialog";
-import { useBoard, useBoards, useBoardCreate, useColumnCreate, useTaskMove, useTaskReorder, useProjects } from "@/lib/queries";
+import { useBoard, useBoards, useBoardCreate, useColumnCreate, useTaskMove, useTaskReorder } from "@/lib/queries";
 import type { Task, Column } from "@/components/board/types";
 
 type ViewMode = "kanban" | "list";
@@ -31,9 +31,6 @@ type ViewMode = "kanban" | "list";
 export function BoardPage() {
   const params = useParams({ strict: false }) as { id: string };
   const projectId = params.id;
-
-  const { data: projects = [] } = useProjects();
-  const project = projects.find((p) => p.id === projectId);
 
   // Get first board for this project or create one
   const { data: boards = [], isLoading } = useBoards(projectId);
@@ -228,9 +225,9 @@ export function BoardPage() {
         <div className="flex items-center gap-3">
           <div
             className="size-3 rounded-full"
-            style={{ backgroundColor: project?.color }}
+            style={{ backgroundColor: "#6B7280" }}
           />
-          <h2 className="font-medium text-sm">{project?.name}</h2>
+          <h2 className="font-medium text-sm">Project Board</h2>
           <span className="text-muted-foreground text-xs">/ Board</span>
         </div>
         <div className="flex items-center gap-2">
@@ -272,7 +269,7 @@ export function BoardPage() {
                   key={column.id}
                   column={column}
                   boardId={board.id}
-                  projectColor={project?.color ?? "#6B7280"}
+                  projectColor="#6B7280"
                   onTaskClick={setSelectedTaskId}
                 />
               ))}
@@ -295,7 +292,7 @@ export function BoardPage() {
             {activeTask && (
               <TaskCard
                 task={activeTask}
-                projectColor={project?.color ?? "#6B7280"}
+                projectColor="#6B7280"
                 isDragging
               />
             )}
