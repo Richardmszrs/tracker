@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { createFileRoute, useParams } from "@tanstack/react-router";
 import {
   DndContext,
   DragOverlay,
@@ -27,11 +28,8 @@ import type { Task, Column } from "@/components/board/types";
 
 type ViewMode = "kanban" | "list";
 
-interface BoardPageProps {
-  params: { id: string };
-}
-
-export function BoardPage({ params }: BoardPageProps) {
+export function BoardPage() {
+  const params = useParams({ strict: false }) as { id: string };
   const projectId = params.id;
 
   const { data: projects = [] } = useProjects();
@@ -376,5 +374,6 @@ export function BoardPage({ params }: BoardPageProps) {
   );
 }
 
-// Export as default for use in parent component
-export default BoardPage;
+export const Route = createFileRoute("/projects/$id/board")({
+  component: BoardPage,
+});
