@@ -70,7 +70,14 @@ function NewInvoicePage() {
   // Set defaults from settings
   useState(() => {
     if (settings) {
-      setCurrency(settings.currencySymbol === "$" ? "USD" : settings.currencySymbol);
+      const symbolToCode: Record<string, string> = {
+        "$": "USD",
+        "€": "EUR",
+        "£": "GBP",
+        "¥": "JPY",
+        "₹": "INR",
+      };
+      setCurrency(symbolToCode[settings.currencySymbol] || "USD");
     }
   });
 
