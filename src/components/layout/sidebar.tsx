@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
   BarChart3,
+  FileText,
   FolderKanban,
   KeyboardIcon,
   LayoutDashboard,
@@ -29,6 +30,7 @@ const navItems = [
   { label: "Clients", to: "/clients", icon: Users },
   { label: "Tags", to: "/tags", icon: Tag },
   { label: "Reports", to: "/reports", icon: BarChart3 },
+  { label: "Invoices", to: "/invoices", icon: FileText },
 ];
 
 const shortcuts = [

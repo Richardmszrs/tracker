@@ -161,6 +161,71 @@ CREATE POLICY "users_can_delete_own_entry_tags" ON public.entry_tags
   FOR DELETE USING (public.uid() = user_id);
 
 -- ============================================================================
+-- Invoices Table
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS public.invoices (
+  id text PRIMARY KEY DEFAULT uuid_generate_v4()::text,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  number text NOT NULL,
+  client_id text REFERENCES public.clients(id) ON DELETE SET NULL,
+  status text DEFAULT 'draft' NOT NULL,
+  issue_date timestamptz NOT NULL,
+  due_date timestamptz NOT NULL,
+  notes text,
+  tax_rate real DEFAULT 0 NOT NULL,
+  discount real DEFAULT 0 NOT NULL,
+  currency text DEFAULT 'USD' NOT NULL,
+  paid_at timestamptz,
+  created_at timestamptz DEFAULT NOW(),
+  synced_at timestamptz,
+  deleted_at timestamptz,
+  updated_at timestamptz DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policy
+CREATE POLICY "users_can_view_own_invoices" ON public.invoices
+  FOR SELECT USING (public.uid() = user_id);
+CREATE POLICY "users_can_insert_own_invoices" ON public.invoices
+  FOR INSERT WITH CHECK (public.uid() = user_id);
+CREATE POLICY "users_can_update_own_invoices" ON public.invoices
+  FOR UPDATE USING (public.uid() = user_id);
+CREATE POLICY "users_can_delete_own_invoices" ON public.invoices
+  FOR DELETE USING (public.uid() = user_id);
+
+-- ============================================================================
+-- Invoice Items Table
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS public.invoice_items (
+  id text PRIMARY KEY DEFAULT uuid_generate_v4()::text,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  invoice_id text REFERENCES public.invoices(id) ON DELETE CASCADE,
+  entry_id text REFERENCES public.time_entries(id) ON DELETE SET NULL,
+  description text NOT NULL,
+  quantity real NOT NULL,
+  unit_price real NOT NULL,
+  amount real NOT NULL,
+  synced_at timestamptz,
+  deleted_at timestamptz,
+  created_at timestamptz DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE public.invoice_items ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policy
+CREATE POLICY "users_can_view_own_invoice_items" ON public.invoice_items
+  FOR SELECT USING (public.uid() = user_id);
+CREATE POLICY "users_can_insert_own_invoice_items" ON public.invoice_items
+  FOR INSERT WITH CHECK (public.uid() = user_id);
+CREATE POLICY "users_can_update_own_invoice_items" ON public.invoice_items
+  FOR UPDATE USING (public.uid() = user_id);
+CREATE POLICY "users_can_delete_own_invoice_items" ON public.invoice_items
+  FOR DELETE USING (public.uid() = user_id);
+
+-- ============================================================================
 -- Indexes for better query performance
 -- ============================================================================
 CREATE INDEX IF NOT EXISTS idx_remote_clients_user_id ON public.clients(user_id);
@@ -177,6 +242,12 @@ CREATE INDEX IF NOT EXISTS idx_remote_time_entries_updated_at ON public.time_ent
 CREATE INDEX IF NOT EXISTS idx_remote_entry_tags_entry_id ON public.entry_tags(entry_id);
 CREATE INDEX IF NOT EXISTS idx_remote_entry_tags_tag_id ON public.entry_tags(tag_id);
 CREATE INDEX IF NOT EXISTS idx_remote_entry_tags_user_id ON public.entry_tags(user_id);
+CREATE INDEX IF NOT EXISTS idx_remote_invoices_user_id ON public.invoices(user_id);
+CREATE INDEX IF NOT EXISTS idx_remote_invoices_client_id ON public.invoices(client_id);
+CREATE INDEX IF NOT EXISTS idx_remote_invoices_updated_at ON public.invoices(updated_at);
+CREATE INDEX IF NOT EXISTS idx_remote_invoice_items_invoice_id ON public.invoice_items(invoice_id);
+CREATE INDEX IF NOT EXISTS idx_remote_invoice_items_entry_id ON public.invoice_items(entry_id);
+CREATE INDEX IF NOT EXISTS idx_remote_invoice_items_user_id ON public.invoice_items(user_id);
 
 -- ============================================================================
 -- Trigger function to auto-update updated_at timestamp
@@ -204,4 +275,8 @@ CREATE TRIGGER update_projects_updated_at BEFORE UPDATE ON public.projects
 
 DROP TRIGGER IF EXISTS update_time_entries_updated_at ON public.time_entries;
 CREATE TRIGGER update_time_entries_updated_at BEFORE UPDATE ON public.time_entries
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_invoices_updated_at ON public.invoices;
+CREATE TRIGGER update_invoices_updated_at BEFORE UPDATE ON public.invoices
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();

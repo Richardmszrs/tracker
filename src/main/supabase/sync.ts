@@ -9,6 +9,8 @@ import {
   tags,
   timeEntries,
   entryTags,
+  invoices,
+  invoiceItems,
 } from "@/main/db/schema";
 import { isNull, or, lt, eq } from "drizzle-orm";
 import type { AuthUser } from "./auth";
@@ -64,7 +66,9 @@ export class SyncEngine {
       this.countUnsyncedClients() +
       this.countUnsyncedProjects() +
       this.countUnsyncedTags() +
-      this.countUnsyncedEntries();
+      this.countUnsyncedEntries() +
+      this.countUnsyncedInvoices() +
+      this.countUnsyncedInvoiceItems();
 
     return {
       lastSyncedAt: syncStore.get("lastSyncedAt"),
@@ -138,6 +142,29 @@ export class SyncEngine {
           lt(timeEntries.syncedAt, timeEntries.createdAt)
         )
       )
+      .all().length;
+  }
+
+  private countUnsyncedInvoices(): number {
+    const db = getDb();
+    return db
+      .select()
+      .from(invoices)
+      .where(
+        or(
+          isNull(invoices.syncedAt),
+          lt(invoices.syncedAt, invoices.createdAt)
+        )
+      )
+      .all().length;
+  }
+
+  private countUnsyncedInvoiceItems(): number {
+    const db = getDb();
+    return db
+      .select()
+      .from(invoiceItems)
+      .where(isNull(invoiceItems.syncedAt))
       .all().length;
   }
 
@@ -360,6 +387,87 @@ export class SyncEngine {
         }
       }
     }
+
+    // Push invoices
+    const unsyncedInvoices = db
+      .select()
+      .from(invoices)
+      .where(
+        or(
+          isNull(invoices.syncedAt),
+          lt(invoices.syncedAt, invoices.createdAt)
+        )
+      )
+      .all();
+
+    if (unsyncedInvoices.length > 0) {
+      const invoicesToPush = unsyncedInvoices.map((inv) => ({
+        id: inv.id,
+        user_id: this.user!.id,
+        number: inv.number,
+        client_id: inv.clientId,
+        status: inv.status,
+        issue_date: inv.issueDate,
+        due_date: inv.dueDate,
+        notes: inv.notes,
+        tax_rate: inv.taxRate,
+        discount: inv.discount,
+        currency: inv.currency,
+        paid_at: inv.paidAt,
+        created_at: inv.createdAt,
+        synced_at: new Date(),
+        deleted_at: inv.deletedAt,
+        updated_at: inv.createdAt,
+      }));
+
+      const { error } = await supabase.from("invoices").upsert(invoicesToPush);
+      if (error) {
+        console.error("SyncEngine: Failed to push invoices:", error);
+      } else {
+        for (const inv of unsyncedInvoices) {
+          db.update(invoices)
+            .set({ syncedAt: new Date() })
+            .where(eq(invoices.id, inv.id))
+            .run();
+        }
+      }
+    }
+
+    // Push invoice items
+    const unsyncedInvoiceItems = db
+      .select()
+      .from(invoiceItems)
+      .where(isNull(invoiceItems.syncedAt))
+      .all();
+
+    if (unsyncedInvoiceItems.length > 0) {
+      const itemsToPush = unsyncedInvoiceItems.map((item) => ({
+        id: item.id,
+        user_id: this.user!.id,
+        invoice_id: item.invoiceId,
+        entry_id: item.entryId,
+        description: item.description,
+        quantity: item.quantity,
+        unit_price: item.unitPrice,
+        amount: item.amount,
+        synced_at: new Date(),
+        deleted_at: item.deletedAt,
+      }));
+
+      const { error } = await supabase
+        .from("invoice_items")
+        .upsert(itemsToPush);
+      if (error) {
+        console.error("SyncEngine: Failed to push invoice items:", error);
+      } else {
+        for (const item of unsyncedInvoiceItems) {
+          db.update(invoiceItems)
+            .set({ syncedAt: new Date() })
+            .where(eq(invoiceItems.id, item.id))
+            .run();
+        }
+      }
+    }
   }
 
   private async pull(): Promise<void> {
@@ -574,6 +682,106 @@ export class SyncEngine {
               syncedAt: new Date(),
             })
             .where(eq(entryTags.id, ret.id))
+            .run();
+        }
+      }
+    }
+
+    // Pull invoices
+    const { data: remoteInvoices, error: invoicesError } = await supabase
+      .from("invoices")
+      .select("*")
+      .eq("user_id", this.user.id)
+      .or(`updated_at.gt.${lastPulledDate},deleted_at.gt.${lastPulledDate}`);
+
+    if (!invoicesError && remoteInvoices) {
+      for (const ri of remoteInvoices) {
+        const existing = db
+          .select()
+          .from(invoices)
+          .where(eq(invoices.id, ri.id))
+          .get();
+
+        if (!existing) {
+          db.insert(invoices)
+            .values({
+              id: ri.id,
+              userId: ri.user_id,
+              number: ri.number,
+              clientId: ri.client_id,
+              status: ri.status,
+              issueDate: new Date(ri.issue_date),
+              dueDate: new Date(ri.due_date),
+              notes: ri.notes,
+              taxRate: ri.tax_rate,
+              discount: ri.discount,
+              currency: ri.currency,
+              paidAt: ri.paid_at ? new Date(ri.paid_at) : null,
+              createdAt: new Date(ri.created_at),
+              syncedAt: new Date(),
+              deletedAt: ri.deleted_at ? new Date(ri.deleted_at) : null,
+            })
+            .run();
+        } else if (new Date(ri.updated_at) > existing.createdAt) {
+          db.update(invoices)
+            .set({
+              number: ri.number,
+              clientId: ri.client_id,
+              status: ri.status,
+              issueDate: new Date(ri.issue_date),
+              dueDate: new Date(ri.due_date),
+              notes: ri.notes,
+              taxRate: ri.tax_rate,
+              discount: ri.discount,
+              currency: ri.currency,
+              paidAt: ri.paid_at ? new Date(ri.paid_at) : null,
+              deletedAt: ri.deleted_at ? new Date(ri.deleted_at) : null,
+              syncedAt: new Date(),
+            })
+            .where(eq(invoices.id, ri.id))
+            .run();
+        }
+      }
+    }
+
+    // Pull invoice items
+    const { data: remoteInvoiceItems, error: invoiceItemsError } = await supabase
+      .from("invoice_items")
+      .select("*")
+      .eq("user_id", this.user.id)
+      .or(`created_at.gt.${lastPulledDate},deleted_at.gt.${lastPulledDate}`);
+
+    if (!invoiceItemsError && remoteInvoiceItems) {
+      for (const rii of remoteInvoiceItems) {
+        const existing = db
+          .select()
+          .from(invoiceItems)
+          .where(eq(invoiceItems.id, rii.id))
+          .get();
+
+        if (!existing) {
+          db.insert(invoiceItems)
+            .values({
+              id: rii.id,
+              userId: rii.user_id,
+              invoiceId: rii.invoice_id,
+              entryId: rii.entry_id,
+              description: rii.description,
+              quantity: rii.quantity,
+              unitPrice: rii.unit_price,
+              amount: rii.amount,
+              syncedAt: new Date(),
+              deletedAt: rii.deleted_at ? new Date(rii.deleted_at) : null,
+              createdAt: new Date(rii.created_at),
+            })
+            .run();
+        } else if (rii.deleted_at && !existing.deletedAt) {
+          db.update(invoiceItems)
+            .set({
+              deletedAt: new Date(rii.deleted_at),
+              syncedAt: new Date(),
+            })
+            .where(eq(invoiceItems.id, rii.id))
             .run();
         }
       }

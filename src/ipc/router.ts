@@ -34,6 +34,15 @@ import {
   syncUpdateOnFocus,
   syncGetSettings,
 } from "@/main/ipc/sync";
+import {
+  invoiceCreate,
+  invoiceDelete,
+  invoiceGet,
+  invoiceGetNextNumber,
+  invoiceGetUnbilledEntries,
+  invoiceList,
+  invoiceUpdate,
+} from "@/main/ipc/invoices";
 import { app } from "./app";
 import { shell } from "./shell";
 import { theme } from "./theme";
@@ -92,5 +101,14 @@ export const router = {
     updateFrequency: syncUpdateFrequency,
     updateOnFocus: syncUpdateOnFocus,
     getSettings: syncGetSettings,
+  },
+  invoices: {
+    create: invoiceCreate,
+    list: invoiceList,
+    get: invoiceGet,
+    update: invoiceUpdate,
+    delete: invoiceDelete,
+    getNextNumber: invoiceGetNextNumber,
+    getUnbilledEntries: invoiceGetUnbilledEntries,
   },
 };
