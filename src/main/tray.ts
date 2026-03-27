@@ -30,8 +30,10 @@ export function setupTray(mainWindow: BrowserWindow) {
   tray.setContextMenu(buildContextMenu());
 
   tray.on("click", () => {
-    mainWindow.show();
-    mainWindow.focus();
+    if (!mainWindowRef?.isDestroyed()) {
+      mainWindowRef?.show();
+      mainWindowRef?.focus();
+    }
   });
 }
 
@@ -84,7 +86,7 @@ function buildContextMenu(): Menu {
 }
 
 function updateTrayMenu() {
-  if (tray) {
+  if (tray && !tray.isDestroyed()) {
     tray.setContextMenu(buildContextMenu());
   }
 }
