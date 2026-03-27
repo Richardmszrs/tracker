@@ -102,3 +102,4 @@ npm run test:all              # Run vitest + playwright e2e
 - Phase 1-6: Core app features (timer, projects, clients, tags, reports, settings)
 - Phase 7: Supabase local-first sync ✅
 - Phase 9: Kanban board with task management and time tracking ✅
+- Phase 10: Dashboard daily entries improvements (resume, inline edit, totals) ✅

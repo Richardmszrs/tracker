@@ -36,7 +36,7 @@ function DashboardPage() {
         </Button>
       </div>
       <ErrorBoundary>
-        <TimeEntriesList />
+        <TimeEntriesList onStartTimer={() => setManualEntryOpen(true)} />
       </ErrorBoundary>
       <ManualEntryDialog
         open={manualEntryOpen}
