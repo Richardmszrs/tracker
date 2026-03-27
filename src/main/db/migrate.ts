@@ -124,6 +124,7 @@ const SYNC_MIGRATIONS = [
   `ALTER TABLE tt_invoice_items ADD COLUMN user_id text`,
   `ALTER TABLE tt_invoice_items ADD COLUMN synced_at integer`,
   `ALTER TABLE tt_invoice_items ADD COLUMN deleted_at integer`,
+  `ALTER TABLE tt_invoice_items ADD COLUMN created_at integer`,
 ];
 
 export function runMigrations() {

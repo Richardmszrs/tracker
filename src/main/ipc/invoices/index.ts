@@ -5,6 +5,16 @@ import { z } from "zod";
 import { getDb } from "@/main/db/client";
 import { clients, invoices, invoiceItems, projects, timeEntries } from "@/main/db/schema";
 
+const currencySymbols: Record<string, string> = {
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+  CAD: "C$",
+  AUD: "A$",
+  JPY: "¥",
+  INR: "₹",
+};
+
 const invoiceCreateSchema = z.object({
   clientId: z.string(),
   entryIds: z.array(z.string()),
@@ -110,6 +120,7 @@ export const invoiceCreate = os
           quantity: hours,
           unitPrice: rate,
           amount: hours * rate,
+          createdAt,
         });
       } else {
         const group = projectGroups.get(entry.projectId) || {
@@ -127,7 +138,8 @@ export const invoiceCreate = os
     }
 
     // Create items for grouped entries
-    for (const [projectId, group] of projectGroups) {
+    const currencySymbol = currencySymbols[opt.input.currency] || "$";
+    for (const [, group] of projectGroups) {
       const amount = group.totalHours * group.rate;
       const projectName = group.entries[0]?.projectName || "Unknown Project";
 
@@ -135,10 +147,11 @@ export const invoiceCreate = os
         id: nanoid(),
         invoiceId: id,
         entryId: null,
-        description: `${projectName} (${group.totalHours.toFixed(2)} hours @ $${group.rate}/hr)`,
+        description: `${projectName} (${group.totalHours.toFixed(2)} hours @ ${currencySymbol}${group.rate}/hr)`,
         quantity: group.totalHours,
         unitPrice: group.rate,
         amount,
+        createdAt,
       });
     }
 
@@ -293,6 +306,16 @@ export const invoiceGetUnbilledEntries = os
   .handler((opt) => {
     const db = getDb();
 
+    const conditions = [
+      eq(timeEntries.billable, true),
+      isNull(timeEntries.invoiceId),
+      isNull(timeEntries.deletedAt),
+    ];
+
+    if (opt.input.clientId) {
+      conditions.push(eq(projects.clientId, opt.input.clientId));
+    }
+
     return db
       .select({
         id: timeEntries.id,
@@ -307,13 +330,6 @@ export const invoiceGetUnbilledEntries = os
       })
       .from(timeEntries)
       .leftJoin(projects, eq(timeEntries.projectId, projects.id))
-      .where(
-        and(
-          eq(timeEntries.billable, true),
-          isNull(timeEntries.invoiceId),
-          isNull(timeEntries.deletedAt),
-          opt.input.clientId ? eq(projects.clientId, opt.input.clientId) : undefined
-        )
-      )
+      .where(and(...conditions))
       .all();
   });

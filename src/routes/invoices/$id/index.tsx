@@ -60,12 +60,12 @@ function getStatusBadgeVariant(status: string): "default" | "secondary" | "destr
 }
 
 function InvoiceDetailPage() {
-  const { id } = useParams({ strict: false });
+  const { id } = useParams({ strict: false }) as { id: string };
   const navigate = useNavigate();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
-  const { data: invoice, isLoading } = useInvoice(id!) as { data: InvoiceWithDetails | undefined; isLoading: boolean };
+  const { data: invoice, isLoading } = useInvoice(id) as { data: InvoiceWithDetails | undefined; isLoading: boolean };
   const updateInvoice = useInvoiceUpdate();
   const deleteInvoice = useInvoiceDelete();
 
@@ -80,6 +80,10 @@ function InvoiceDetailPage() {
       await deleteInvoice.mutateAsync({ id });
       navigate({ to: "/invoices" });
     }
+  };
+
+  const handlePrint = () => {
+    window.print();
   };
 
   const calculateSubtotal = (): number => {
@@ -181,7 +185,7 @@ function InvoiceDetailPage() {
               Mark as Paid
             </Button>
           )}
-          <Button variant="outline">
+          <Button variant="outline" onClick={handlePrint}>
             <PrinterIcon className="size-4 mr-2" />
             Print
           </Button>

@@ -316,7 +316,6 @@ function NewInvoicePage() {
                       mode="single"
                       selected={issueDate}
                       onSelect={(date) => date && setIssueDate(date)}
-                      initialFocus
                     />
                   </PopoverContent>
                 </Popover>
@@ -338,7 +337,6 @@ function NewInvoicePage() {
                       mode="single"
                       selected={dueDate}
                       onSelect={(date) => date && setDueDate(date)}
-                      initialFocus
                     />
                   </PopoverContent>
                 </Popover>

@@ -94,4 +94,5 @@ export const invoiceItems = createTable("invoice_items", {
   amount: real("amount").notNull(),
   syncedAt: integer("synced_at", { mode: "timestamp" }),
   deletedAt: integer("deleted_at", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });

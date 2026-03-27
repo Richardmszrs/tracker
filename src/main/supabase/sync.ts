@@ -772,6 +772,7 @@ export class SyncEngine {
               amount: rii.amount,
               syncedAt: new Date(),
               deletedAt: rii.deleted_at ? new Date(rii.deleted_at) : null,
+              createdAt: new Date(rii.created_at),
             })
             .run();
         } else if (rii.deleted_at && !existing.deletedAt) {
