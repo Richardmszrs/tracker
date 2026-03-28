@@ -43,6 +43,23 @@ import {
   invoiceList,
   invoiceUpdate,
 } from "@/main/ipc/invoices";
+import {
+  boardCreate,
+  boardGet,
+  boardList,
+  columnCreate,
+  columnUpdate,
+  columnDelete,
+  columnReorder,
+  taskCreate,
+  taskGet,
+  taskList,
+  tasksMine,
+  taskUpdate,
+  taskDelete,
+  taskMove,
+  taskReorder,
+} from "@/main/ipc/boards";
 import { app } from "./app";
 import { shell } from "./shell";
 import { theme } from "./theme";
@@ -110,5 +127,26 @@ export const router = {
     delete: invoiceDelete,
     getNextNumber: invoiceGetNextNumber,
     getUnbilledEntries: invoiceGetUnbilledEntries,
+  },
+  boards: {
+    create: boardCreate,
+    get: boardGet,
+    list: boardList,
+  },
+  columns: {
+    create: columnCreate,
+    update: columnUpdate,
+    delete: columnDelete,
+    reorder: columnReorder,
+  },
+  tasks: {
+    create: taskCreate,
+    get: taskGet,
+    list: taskList,
+    mine: tasksMine,
+    update: taskUpdate,
+    delete: taskDelete,
+    move: taskMove,
+    reorder: taskReorder,
   },
 };

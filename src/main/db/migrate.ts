@@ -83,6 +83,17 @@ const INDEXES = [
   `CREATE INDEX IF NOT EXISTS idx_projects_client_id ON tt_projects(client_id)`,
 ];
 
+// Indexes for new kanban tables - created after tables are ready
+const KANBAN_INDEXES = [
+  `CREATE INDEX IF NOT EXISTS idx_time_entries_task_id ON tt_time_entries(task_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_boards_project_id ON tt_boards(project_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_columns_board_id ON tt_columns(board_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_tasks_column_id ON tt_tasks(column_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_tasks_board_id ON tt_tasks(board_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_task_tags_task_id ON tt_task_tags(task_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_task_tags_tag_id ON tt_task_tags(tag_id)`,
+];
+
 // Sync columns migration (v2)
 const SYNC_MIGRATIONS = [
   // Add user_id columns
@@ -125,6 +136,61 @@ const SYNC_MIGRATIONS = [
   `ALTER TABLE tt_invoice_items ADD COLUMN synced_at integer`,
   `ALTER TABLE tt_invoice_items ADD COLUMN deleted_at integer`,
   `ALTER TABLE tt_invoice_items ADD COLUMN created_at integer`,
+
+  // Boards, columns, tasks for kanban
+  `CREATE TABLE IF NOT EXISTS tt_boards (
+    id text PRIMARY KEY NOT NULL,
+    user_id text,
+    project_id text NOT NULL,
+    name text NOT NULL,
+    created_at integer NOT NULL,
+    synced_at integer,
+    deleted_at integer,
+    FOREIGN KEY (project_id) REFERENCES tt_projects(id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS tt_columns (
+    id text PRIMARY KEY NOT NULL,
+    user_id text,
+    board_id text NOT NULL,
+    name text NOT NULL,
+    "order" integer NOT NULL,
+    color text NOT NULL,
+    created_at integer NOT NULL,
+    synced_at integer,
+    deleted_at integer,
+    FOREIGN KEY (board_id) REFERENCES tt_boards(id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS tt_tasks (
+    id text PRIMARY KEY NOT NULL,
+    user_id text,
+    column_id text NOT NULL,
+    board_id text NOT NULL,
+    title text NOT NULL,
+    description text,
+    "order" integer NOT NULL,
+    priority text DEFAULT 'none' NOT NULL,
+    due_date integer,
+    assignee text,
+    estimated_minutes integer,
+    created_at integer NOT NULL,
+    synced_at integer,
+    deleted_at integer,
+    FOREIGN KEY (column_id) REFERENCES tt_columns(id),
+    FOREIGN KEY (board_id) REFERENCES tt_boards(id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS tt_task_tags (
+    id text PRIMARY KEY NOT NULL,
+    user_id text,
+    task_id text NOT NULL,
+    tag_id text NOT NULL,
+    synced_at integer,
+    deleted_at integer,
+    FOREIGN KEY (task_id) REFERENCES tt_tasks(id),
+    FOREIGN KEY (tag_id) REFERENCES tt_tags(id)
+  )`,
+
+  // Add task_id to time_entries
+  `ALTER TABLE tt_time_entries ADD COLUMN task_id text`,
 ];
 
 export function runMigrations() {
@@ -150,6 +216,15 @@ export function runMigrations() {
     } catch {
       // Ignore errors from ALTER TABLE if column already exists
       // SQLite doesn't support IF NOT EXISTS for ALTER TABLE ADD COLUMN
+    }
+  }
+
+  // Create indexes for kanban tables (after tables are created)
+  for (const sql of KANBAN_INDEXES) {
+    try {
+      db.exec(sql);
+    } catch {
+      // Ignore if already exists
     }
   }
 }

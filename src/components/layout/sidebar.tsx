@@ -37,7 +37,9 @@ const shortcuts = [
   { keys: ["⌘", "K"], desc: "Open command palette" },
   { keys: ["⌘", "Shift", "T"], desc: "Toggle timer (global)" },
   { keys: ["⌘", "N"], desc: "New manual entry (when focused)" },
-  { keys: ["⌘", "B"], desc: "Toggle sidebar (if implemented)" },
+  { keys: ["E"], desc: "Edit focused entry" },
+  { keys: ["R"], desc: "Resume focused entry" },
+  { keys: ["Delete"], desc: "Delete focused entry" },
 ];
 
 export default function Sidebar() {

@@ -3,7 +3,7 @@ import { eq, isNull } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { getDb } from "@/main/db/client";
-import { projects } from "@/main/db/schema";
+import { projects, boards, columns } from "@/main/db/schema";
 
 const projectCreateSchema = z.object({
   name: z.string().min(1),
@@ -42,6 +42,40 @@ export const projectCreate = os
         createdAt,
       })
       .returning();
+
+    // Auto-create default board with columns
+    const boardId = nanoid();
+    await db
+      .insert(boards)
+      .values({
+        id: boardId,
+        projectId: id,
+        name: "Board",
+        createdAt,
+      })
+      .returning();
+
+    // Create default columns: "To do", "In progress", "Done"
+    const defaultColumns = [
+      { name: "To do", color: "#6B7280", order: 0 },
+      { name: "In progress", color: "#3B82F6", order: 1 },
+      { name: "Done", color: "#22C55E", order: 2 },
+    ];
+
+    for (const col of defaultColumns) {
+      await db
+        .insert(columns)
+        .values({
+          id: nanoid(),
+          boardId,
+          name: col.name,
+          color: col.color,
+          order: col.order,
+          createdAt,
+        })
+        .returning();
+    }
+
     return { id, ...opt.input, createdAt };
   });
 

@@ -6,6 +6,7 @@ const timerStartSchema = z.object({
   description: z.string().min(1),
   projectId: z.string().nullable().optional(),
   tagIds: z.array(z.string()).optional(),
+  taskId: z.string().nullable().optional(),
 });
 
 const timerStopSchema = z.object({});
@@ -16,7 +17,8 @@ export const timerStart = os
     const entryId = timerStateMachine.start(
       opt.input.description,
       opt.input.projectId ?? null,
-      opt.input.tagIds ?? []
+      opt.input.tagIds ?? [],
+      opt.input.taskId ?? null
     );
     return { entryId, state: timerStateMachine.getState() };
   });

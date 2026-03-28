@@ -10,6 +10,7 @@ const entryCreateSchema = z.object({
   startAt: z.number(),
   endAt: z.number().optional(),
   projectId: z.string().optional(),
+  taskId: z.string().optional(),
   billable: z.boolean().default(true),
   tagIds: z.array(z.string()).optional(),
 });
@@ -20,6 +21,7 @@ const entryUpdateSchema = z.object({
   startAt: z.number().optional(),
   endAt: z.number().nullable().optional(),
   projectId: z.string().nullable().optional(),
+  taskId: z.string().nullable().optional(),
   billable: z.boolean().optional(),
   tagIds: z.array(z.string()).optional(),
 });
@@ -50,6 +52,7 @@ export const entryCreate = os
         startAt,
         endAt,
         projectId: opt.input.projectId ?? null,
+        taskId: opt.input.taskId ?? null,
         billable: opt.input.billable,
         createdAt,
       })
@@ -96,7 +99,7 @@ export const entryUpdate = os
   .input(entryUpdateSchema)
   .handler(async (opt) => {
     const db = getDb();
-    const { id, tagIds, description, startAt, endAt, projectId, billable } =
+    const { id, tagIds, description, startAt, endAt, projectId, taskId, billable } =
       opt.input;
 
     const dbUpdates: Record<string, unknown> = {};
@@ -105,6 +108,7 @@ export const entryUpdate = os
     if (endAt !== undefined)
       dbUpdates.endAt = endAt ? new Date(endAt) : null;
     if (projectId !== undefined) dbUpdates.projectId = projectId;
+    if (taskId !== undefined) dbUpdates.taskId = taskId;
     if (billable !== undefined) dbUpdates.billable = billable;
 
     if (Object.keys(dbUpdates).length > 0) {

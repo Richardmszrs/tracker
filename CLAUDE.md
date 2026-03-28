@@ -59,11 +59,15 @@ src/
       queries.ts      # TanStack Query hooks (includes auth/sync hooks)
 
 ## DB schema tables
-- time_entries: id, userId, description, startAt, endAt, projectId, billable, createdAt, syncedAt, deletedAt
+- time_entries: id, userId, description, startAt, endAt, projectId, taskId, billable, createdAt, syncedAt, deletedAt
 - projects: id, userId, name, color, clientId, hourlyRate, archived, createdAt, syncedAt, deletedAt
 - clients: id, userId, name, createdAt, syncedAt, deletedAt
 - tags: id, userId, name, createdAt, syncedAt, deletedAt
 - entry_tags: id, userId, entryId, tagId, syncedAt, deletedAt
+- boards: id, userId, projectId, name, createdAt, syncedAt, deletedAt
+- columns: id, userId, boardId, name, order, color, createdAt, syncedAt, deletedAt
+- tasks: id, userId, columnId, boardId, title, description, order, priority, dueDate, assignee, estimatedMinutes, createdAt, syncedAt, deletedAt
+- task_tags: id, userId, taskId, tagId, syncedAt, deletedAt
 
 ## Sync behavior
 - SQLite is the primary store and source of truth
@@ -97,3 +101,5 @@ npm run test:all              # Run vitest + playwright e2e
 ## Phases
 - Phase 1-6: Core app features (timer, projects, clients, tags, reports, settings)
 - Phase 7: Supabase local-first sync ✅
+- Phase 9: Kanban board with task management and time tracking ✅
+- Phase 10: Dashboard daily entries improvements (resume, inline edit, totals) ✅

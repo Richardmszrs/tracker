@@ -11,6 +11,10 @@ import {
   entryTags,
   invoices,
   invoiceItems,
+  boards,
+  columns,
+  tasks,
+  taskTags,
 } from "@/main/db/schema";
 import { isNull, or, lt, eq } from "drizzle-orm";
 import type { AuthUser } from "./auth";
@@ -68,7 +72,11 @@ export class SyncEngine {
       this.countUnsyncedTags() +
       this.countUnsyncedEntries() +
       this.countUnsyncedInvoices() +
-      this.countUnsyncedInvoiceItems();
+      this.countUnsyncedInvoiceItems() +
+      this.countUnsyncedBoards() +
+      this.countUnsyncedColumns() +
+      this.countUnsyncedTasks() +
+      this.countUnsyncedTaskTags();
 
     return {
       lastSyncedAt: syncStore.get("lastSyncedAt"),
@@ -165,6 +173,57 @@ export class SyncEngine {
       .select()
       .from(invoiceItems)
       .where(isNull(invoiceItems.syncedAt))
+      .all().length;
+  }
+
+  private countUnsyncedBoards(): number {
+    const db = getDb();
+    return db
+      .select()
+      .from(boards)
+      .where(
+        or(
+          isNull(boards.syncedAt),
+          lt(boards.syncedAt, boards.createdAt)
+        )
+      )
+      .all().length;
+  }
+
+  private countUnsyncedColumns(): number {
+    const db = getDb();
+    return db
+      .select()
+      .from(columns)
+      .where(
+        or(
+          isNull(columns.syncedAt),
+          lt(columns.syncedAt, columns.createdAt)
+        )
+      )
+      .all().length;
+  }
+
+  private countUnsyncedTasks(): number {
+    const db = getDb();
+    return db
+      .select()
+      .from(tasks)
+      .where(
+        or(
+          isNull(tasks.syncedAt),
+          lt(tasks.syncedAt, tasks.createdAt)
+        )
+      )
+      .all().length;
+  }
+
+  private countUnsyncedTaskTags(): number {
+    const db = getDb();
+    return db
+      .select()
+      .from(taskTags)
+      .where(isNull(taskTags.syncedAt))
       .all().length;
   }
 
@@ -333,6 +392,7 @@ export class SyncEngine {
         start_at: e.startAt,
         end_at: e.endAt,
         project_id: e.projectId,
+        task_id: e.taskId,
         billable: e.billable,
         created_at: e.createdAt,
         synced_at: new Date(),
@@ -464,6 +524,159 @@ export class SyncEngine {
           db.update(invoiceItems)
             .set({ syncedAt: new Date() })
             .where(eq(invoiceItems.id, item.id))
+            .run();
+        }
+      }
+    }
+
+    // Push boards
+    const unsyncedBoards = db
+      .select()
+      .from(boards)
+      .where(
+        or(
+          isNull(boards.syncedAt),
+          lt(boards.syncedAt, boards.createdAt)
+        )
+      )
+      .all();
+
+    if (unsyncedBoards.length > 0) {
+      const boardsToPush = unsyncedBoards.map((b) => ({
+        id: b.id,
+        user_id: this.user!.id,
+        project_id: b.projectId,
+        name: b.name,
+        created_at: b.createdAt,
+        synced_at: new Date(),
+        deleted_at: b.deletedAt,
+        updated_at: b.createdAt,
+      }));
+
+      const { error } = await supabase.from("boards").upsert(boardsToPush);
+      if (error) {
+        console.error("SyncEngine: Failed to push boards:", error);
+      } else {
+        for (const board of unsyncedBoards) {
+          db.update(boards)
+            .set({ syncedAt: new Date() })
+            .where(eq(boards.id, board.id))
+            .run();
+        }
+      }
+    }
+
+    // Push columns
+    const unsyncedColumns = db
+      .select()
+      .from(columns)
+      .where(
+        or(
+          isNull(columns.syncedAt),
+          lt(columns.syncedAt, columns.createdAt)
+        )
+      )
+      .all();
+
+    if (unsyncedColumns.length > 0) {
+      const columnsToPush = unsyncedColumns.map((c) => ({
+        id: c.id,
+        user_id: this.user!.id,
+        board_id: c.boardId,
+        name: c.name,
+        order: c.order,
+        color: c.color,
+        created_at: c.createdAt,
+        synced_at: new Date(),
+        deleted_at: c.deletedAt,
+        updated_at: c.createdAt,
+      }));
+
+      const { error } = await supabase.from("columns").upsert(columnsToPush);
+      if (error) {
+        console.error("SyncEngine: Failed to push columns:", error);
+      } else {
+        for (const col of unsyncedColumns) {
+          db.update(columns)
+            .set({ syncedAt: new Date() })
+            .where(eq(columns.id, col.id))
+            .run();
+        }
+      }
+    }
+
+    // Push tasks
+    const unsyncedTasks = db
+      .select()
+      .from(tasks)
+      .where(
+        or(
+          isNull(tasks.syncedAt),
+          lt(tasks.syncedAt, tasks.createdAt)
+        )
+      )
+      .all();
+
+    if (unsyncedTasks.length > 0) {
+      const tasksToPush = unsyncedTasks.map((t) => ({
+        id: t.id,
+        user_id: this.user!.id,
+        column_id: t.columnId,
+        board_id: t.boardId,
+        title: t.title,
+        description: t.description,
+        order: t.order,
+        priority: t.priority,
+        due_date: t.dueDate,
+        assignee: t.assignee,
+        estimated_minutes: t.estimatedMinutes,
+        created_at: t.createdAt,
+        synced_at: new Date(),
+        deleted_at: t.deletedAt,
+        updated_at: t.createdAt,
+      }));
+
+      const { error } = await supabase.from("tasks").upsert(tasksToPush);
+      if (error) {
+        console.error("SyncEngine: Failed to push tasks:", error);
+      } else {
+        for (const task of unsyncedTasks) {
+          db.update(tasks)
+            .set({ syncedAt: new Date() })
+            .where(eq(tasks.id, task.id))
+            .run();
+        }
+      }
+    }
+
+    // Push task tags
+    const unsyncedTaskTags = db
+      .select()
+      .from(taskTags)
+      .where(isNull(taskTags.syncedAt))
+      .all();
+
+    if (unsyncedTaskTags.length > 0) {
+      const taskTagsToPush = unsyncedTaskTags.map((tt) => ({
+        id: tt.id,
+        user_id: this.user!.id,
+        task_id: tt.taskId,
+        tag_id: tt.tagId,
+        synced_at: new Date(),
+        deleted_at: tt.deletedAt,
+        created_at: new Date(),
+      }));
+
+      const { error } = await supabase
+        .from("task_tags")
+        .upsert(taskTagsToPush);
+      if (error) {
+        console.error("SyncEngine: Failed to push task tags:", error);
+      } else {
+        for (const tt of unsyncedTaskTags) {
+          db.update(taskTags)
+            .set({ syncedAt: new Date() })
+            .where(eq(taskTags.id, tt.id))
             .run();
         }
       }
@@ -782,6 +995,184 @@ export class SyncEngine {
               syncedAt: new Date(),
             })
             .where(eq(invoiceItems.id, rii.id))
+            .run();
+        }
+      }
+    }
+
+    // Pull boards
+    const { data: remoteBoards, error: boardsError } = await supabase
+      .from("boards")
+      .select("*")
+      .eq("user_id", this.user.id)
+      .or(`updated_at.gt.${lastPulledDate},deleted_at.gt.${lastPulledDate}`);
+
+    if (!boardsError && remoteBoards) {
+      for (const rb of remoteBoards) {
+        const existing = db
+          .select()
+          .from(boards)
+          .where(eq(boards.id, rb.id))
+          .get();
+
+        if (!existing) {
+          db.insert(boards)
+            .values({
+              id: rb.id,
+              userId: rb.user_id,
+              projectId: rb.project_id,
+              name: rb.name,
+              createdAt: new Date(rb.created_at),
+              syncedAt: new Date(),
+              deletedAt: rb.deleted_at ? new Date(rb.deleted_at) : null,
+            })
+            .run();
+        } else if (new Date(rb.updated_at) > existing.createdAt) {
+          db.update(boards)
+            .set({
+              name: rb.name,
+              projectId: rb.project_id,
+              deletedAt: rb.deleted_at ? new Date(rb.deleted_at) : null,
+              syncedAt: new Date(),
+            })
+            .where(eq(boards.id, rb.id))
+            .run();
+        }
+      }
+    }
+
+    // Pull columns
+    const { data: remoteColumns, error: columnsError } = await supabase
+      .from("columns")
+      .select("*")
+      .eq("user_id", this.user.id)
+      .or(`updated_at.gt.${lastPulledDate},deleted_at.gt.${lastPulledDate}`);
+
+    if (!columnsError && remoteColumns) {
+      for (const rc of remoteColumns) {
+        const existing = db
+          .select()
+          .from(columns)
+          .where(eq(columns.id, rc.id))
+          .get();
+
+        if (!existing) {
+          db.insert(columns)
+            .values({
+              id: rc.id,
+              userId: rc.user_id,
+              boardId: rc.board_id,
+              name: rc.name,
+              order: rc.order,
+              color: rc.color,
+              createdAt: new Date(rc.created_at),
+              syncedAt: new Date(),
+              deletedAt: rc.deleted_at ? new Date(rc.deleted_at) : null,
+            })
+            .run();
+        } else if (new Date(rc.updated_at) > existing.createdAt) {
+          db.update(columns)
+            .set({
+              name: rc.name,
+              order: rc.order,
+              color: rc.color,
+              deletedAt: rc.deleted_at ? new Date(rc.deleted_at) : null,
+              syncedAt: new Date(),
+            })
+            .where(eq(columns.id, rc.id))
+            .run();
+        }
+      }
+    }
+
+    // Pull tasks
+    const { data: remoteTasks, error: tasksError } = await supabase
+      .from("tasks")
+      .select("*")
+      .eq("user_id", this.user.id)
+      .or(`updated_at.gt.${lastPulledDate},deleted_at.gt.${lastPulledDate}`);
+
+    if (!tasksError && remoteTasks) {
+      for (const rt of remoteTasks) {
+        const existing = db
+          .select()
+          .from(tasks)
+          .where(eq(tasks.id, rt.id))
+          .get();
+
+        if (!existing) {
+          db.insert(tasks)
+            .values({
+              id: rt.id,
+              userId: rt.user_id,
+              columnId: rt.column_id,
+              boardId: rt.board_id,
+              title: rt.title,
+              description: rt.description,
+              order: rt.order,
+              priority: rt.priority,
+              dueDate: rt.due_date ? new Date(rt.due_date) : null,
+              assignee: rt.assignee,
+              estimatedMinutes: rt.estimated_minutes,
+              createdAt: new Date(rt.created_at),
+              syncedAt: new Date(),
+              deletedAt: rt.deleted_at ? new Date(rt.deleted_at) : null,
+            })
+            .run();
+        } else if (new Date(rt.updated_at) > existing.createdAt) {
+          db.update(tasks)
+            .set({
+              columnId: rt.column_id,
+              boardId: rt.board_id,
+              title: rt.title,
+              description: rt.description,
+              order: rt.order,
+              priority: rt.priority,
+              dueDate: rt.due_date ? new Date(rt.due_date) : null,
+              assignee: rt.assignee,
+              estimatedMinutes: rt.estimated_minutes,
+              deletedAt: rt.deleted_at ? new Date(rt.deleted_at) : null,
+              syncedAt: new Date(),
+            })
+            .where(eq(tasks.id, rt.id))
+            .run();
+        }
+      }
+    }
+
+    // Pull task tags
+    const { data: remoteTaskTags, error: taskTagsError } = await supabase
+      .from("task_tags")
+      .select("*")
+      .eq("user_id", this.user.id)
+      .or(`created_at.gt.${lastPulledDate},deleted_at.gt.${lastPulledDate}`);
+
+    if (!taskTagsError && remoteTaskTags) {
+      for (const rtt of remoteTaskTags) {
+        const existing = db
+          .select()
+          .from(taskTags)
+          .where(eq(taskTags.id, rtt.id))
+          .get();
+
+        if (!existing) {
+          db.insert(taskTags)
+            .values({
+              id: rtt.id,
+              userId: rtt.user_id,
+              taskId: rtt.task_id,
+              tagId: rtt.tag_id,
+              syncedAt: new Date(),
+              deletedAt: rtt.deleted_at ? new Date(rtt.deleted_at) : null,
+            })
+            .run();
+        } else if (rtt.deleted_at && !existing.deletedAt) {
+          db.update(taskTags)
+            .set({
+              deletedAt: new Date(rtt.deleted_at),
+              syncedAt: new Date(),
+            })
+            .where(eq(taskTags.id, rtt.id))
             .run();
         }
       }
