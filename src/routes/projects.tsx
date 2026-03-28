@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { PlusIcon, ArchiveIcon, EyeIcon, LayoutGridIcon } from "lucide-react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -27,6 +27,7 @@ function ProjectsPage() {
   const { data: clients = [] } = useClients();
   const updateMutation = useProjectUpdate();
   const deleteMutation = useProjectDelete();
+  const navigate = useNavigate();
 
   const [showArchived, setShowArchived] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -156,7 +157,7 @@ function ProjectsPage() {
                     variant="ghost"
                     onClick={(e) => {
                       e.stopPropagation();
-                      window.location.href = `/projects/${project.id}/board`;
+                      navigate({ to: "/projects/$id/board", params: { id: project.id } });
                     }}
                     title="Board"
                   >
