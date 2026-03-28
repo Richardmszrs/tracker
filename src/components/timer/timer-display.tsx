@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { PlayIcon, SquareIcon } from "lucide-react";
+import { PlayIcon, SquareIcon, LinkIcon } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -18,10 +18,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
   useTimerState,
   useTimerStart,
   useTimerStop,
   useProjects,
+  useTasks,
 } from "@/lib/queries";
 import { TagMultiSelect } from "@/components/entries/tag-multi-select";
 
@@ -41,14 +50,26 @@ export function TimerDisplay() {
   const startMutation = useTimerStart();
   const stopMutation = useTimerStop();
   const { data: projects = [] } = useProjects();
+  const { data: allTasks = [] } = useTasks();
+  const [taskSearch, setTaskSearch] = useState("");
+  const [taskPopoverOpen, setTaskPopoverOpen] = useState(false);
 
   const [description, setDescription] = useState("");
   const [projectId, setProjectId] = useState<string>("__none__");
   const [tagIds, setTagIds] = useState<string[]>([]);
+  const [taskId, setTaskId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [elapsed, setElapsed] = useState("00:00:00");
 
   const selectedProject = projects.find((p) => p.id === projectId);
+  const selectedTask = allTasks.find((t) => t.id === taskId);
+
+  // Filter tasks by search
+  const filteredTasks = taskSearch
+    ? allTasks.filter((t) =>
+        t.title.toLowerCase().includes(taskSearch.toLowerCase())
+      )
+    : allTasks.slice(0, 10);
 
   useEffect(() => {
     if (state?.running && state?.startAt) {
@@ -68,10 +89,12 @@ export function TimerDisplay() {
       description: description.trim(),
       projectId: projectId === "__none__" ? null : projectId,
       tagIds,
+      taskId: taskId,
     });
     setDescription("");
     setProjectId("__none__");
     setTagIds([]);
+    setTaskId(null);
     setOpen(false);
   };
 
@@ -142,6 +165,73 @@ export function TimerDisplay() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label className="flex items-center gap-1">
+                  <LinkIcon className="size-3" />
+                  Link to task
+                </Label>
+                <Popover open={taskPopoverOpen} onOpenChange={setTaskPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="justify-start text-xs h-7 w-full font-normal"
+                    >
+                      {selectedTask ? (
+                        <span className="truncate">{selectedTask.title}</span>
+                      ) : (
+                        <span className="text-muted-foreground">No task linked</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 p-0" align="start">
+                    <Command>
+                      <CommandInput
+                        placeholder="Search tasks..."
+                        value={taskSearch}
+                        onValueChange={setTaskSearch}
+                      />
+                      <CommandList>
+                        <CommandEmpty>No tasks found.</CommandEmpty>
+                        <CommandGroup>
+                          <CommandItem
+                            value="__none__"
+                            onSelect={() => {
+                              setTaskId(null);
+                              setTaskSearch("");
+                              setTaskPopoverOpen(false);
+                            }}
+                            className="text-xs"
+                          >
+                            No task linked
+                          </CommandItem>
+                          {filteredTasks.map((task) => (
+                            <CommandItem
+                              key={task.id}
+                              value={task.id}
+                              onSelect={() => {
+                                setTaskId(task.id);
+                                setTaskSearch("");
+                                setTaskPopoverOpen(false);
+                              }}
+                              className="text-xs"
+                            >
+                              <div className="flex flex-col gap-0.5">
+                                <span className="truncate">{task.title}</span>
+                                {task.columnName && (
+                                  <span className="text-[0.625rem] text-muted-foreground truncate">
+                                    {task.columnName} {task.boardName && `• ${task.boardName}`}
+                                  </span>
+                                )}
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label>Tags</Label>

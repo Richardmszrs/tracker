@@ -53,6 +53,8 @@ import {
   columnReorder,
   taskCreate,
   taskGet,
+  taskList,
+  tasksMine,
   taskUpdate,
   taskDelete,
   taskMove,
@@ -140,6 +142,8 @@ export const router = {
   tasks: {
     create: taskCreate,
     get: taskGet,
+    list: taskList,
+    mine: tasksMine,
     update: taskUpdate,
     delete: taskDelete,
     move: taskMove,

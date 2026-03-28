@@ -3,7 +3,7 @@ import { eq, isNull, and, asc } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { getDb } from "@/main/db/client";
-import { boards, columns, tasks, taskTags, tags, timeEntries } from "@/main/db/schema";
+import { boards, columns, projects, tasks, taskTags, tags, timeEntries } from "@/main/db/schema";
 
 // Board schemas
 const boardCreateSchema = z.object({
@@ -57,6 +57,12 @@ const taskCreateSchema = z.object({
 const taskGetSchema = z.object({
   id: z.string().min(1),
 });
+
+const taskListSchema = z.object({
+  search: z.string().optional(),
+});
+
+const tasksMineSchema = z.object({});
 
 const taskUpdateSchema = z.object({
   id: z.string().min(1),
@@ -152,59 +158,87 @@ export const boardGet = os
       .orderBy(asc(columns.order))
       .all();
 
-    // Get tasks for each column
-    const columnsWithTasks = await Promise.all(
-      boardColumns.map(async (col) => {
-        const columnTasks = db
-          .select()
-          .from(tasks)
-          .where(and(eq(tasks.columnId, col.id), isNull(tasks.deletedAt)))
-          .orderBy(asc(tasks.order))
-          .all();
+    if (boardColumns.length === 0) {
+      return { ...board, columns: [] };
+    }
 
-        // Get task tags for each task
-        const tasksWithTags = await Promise.all(
-          columnTasks.map(async (task) => {
-            const taskTagRecords = db
-              .select()
-              .from(taskTags)
-              .where(and(eq(taskTags.taskId, task.id), isNull(taskTags.deletedAt)))
-              .all();
+    // Batch fetch: Get all tasks for this board's columns
+    const columnIds = boardColumns.map((col) => col.id);
+    const allTasks = db
+      .select()
+      .from(tasks)
+      .where(and(isNull(tasks.deletedAt)))
+      .all()
+      .filter((task) => columnIds.includes(task.columnId))
+      .sort((a, b) => a.order - b.order);
 
-            const tagIds = taskTagRecords.map((tt) => tt.tagId);
+    // Batch fetch: Get all task tags
+    const taskIds = allTasks.map((task) => task.id);
+    const allTaskTags = taskIds.length > 0
+      ? db.select().from(taskTags).where(isNull(taskTags.deletedAt)).all()
+          .filter((tt) => taskIds.includes(tt.taskId))
+      : [];
 
-            const taskTagsList = tagIds.length > 0
-              ? db.select().from(tags).all().filter(t => tagIds.includes(t.id))
-              : [];
+    // Batch fetch: Get all tags
+    const tagIds = [...new Set(allTaskTags.map((tt) => tt.tagId))];
+    const allTags = tagIds.length > 0
+      ? db.select().from(tags).all().filter((t) => tagIds.includes(t.id))
+      : [];
 
-            // Get tracked time for this task
-            const entries = db
-              .select()
-              .from(timeEntries)
-              .where(eq(timeEntries.taskId, task.id))
-              .all();
+    // Batch fetch: Get all time entries for these tasks
+    const allEntries = taskIds.length > 0
+      ? db.select().from(timeEntries).all()
+          .filter((e) => e.taskId && taskIds.includes(e.taskId))
+      : [];
 
-            const trackedMinutes = entries.reduce((sum, e) => {
-              if (e.startAt && e.endAt) {
-                return sum + Math.round((e.endAt.getTime() - e.startAt.getTime()) / 60000);
-              }
-              return sum;
-            }, 0);
+    // Build lookup maps
+    const tagsById = new Map(allTags.map((t) => [t.id, t]));
+    const taskTagsByTaskId = new Map<string, typeof allTaskTags>();
+    for (const tt of allTaskTags) {
+      if (!taskTagsByTaskId.has(tt.taskId)) {
+        taskTagsByTaskId.set(tt.taskId, []);
+      }
+      taskTagsByTaskId.get(tt.taskId)!.push(tt);
+    }
+    const entriesByTaskId = new Map<string, typeof allEntries>();
+    for (const e of allEntries) {
+      if (e.taskId && !entriesByTaskId.has(e.taskId)) {
+        entriesByTaskId.set(e.taskId, []);
+      }
+      if (e.taskId) {
+        entriesByTaskId.get(e.taskId)!.push(e);
+      }
+    }
 
-            return {
-              ...task,
-              tags: taskTagsList,
-              trackedMinutes,
-            };
-          })
-        );
+    // Assemble columns with tasks
+    const columnsWithTasks = boardColumns.map((col) => {
+      const columnTasks = allTasks
+        .filter((task) => task.columnId === col.id)
+        .map((task) => {
+          const taskTagsList = (taskTagsByTaskId.get(task.id) || [])
+            .map((tt) => tagsById.get(tt.tagId))
+            .filter((tag): tag is NonNullable<typeof tag> => tag !== undefined);
 
-        return {
-          ...col,
-          tasks: tasksWithTags,
-        };
-      })
-    );
+          const entries = entriesByTaskId.get(task.id) || [];
+          const trackedMinutes = entries.reduce((sum, e) => {
+            if (e.startAt && e.endAt) {
+              return sum + Math.round((e.endAt.getTime() - e.startAt.getTime()) / 60000);
+            }
+            return sum;
+          }, 0);
+
+          return {
+            ...task,
+            tags: taskTagsList,
+            trackedMinutes,
+          };
+        });
+
+      return {
+        ...col,
+        tasks: columnTasks,
+      };
+    });
 
     return {
       ...board,
@@ -312,29 +346,6 @@ export const columnDelete = os
 
     if (tasksInColumn.length > 0) {
       throw new Error("Cannot delete column with tasks. Move or delete tasks first.");
-    }
-
-    // Get the first column of the board to move tasks to (if any exist)
-    const firstColumn = db
-      .select()
-      .from(columns)
-      .where(
-        and(
-          eq(columns.boardId, column.boardId),
-          isNull(columns.deletedAt),
-        )
-      )
-      .orderBy(asc(columns.order))
-      .get();
-
-    if (firstColumn && tasksInColumn.length > 0) {
-      // Move tasks to first column
-      for (const task of tasksInColumn) {
-        await db
-          .update(tasks)
-          .set({ columnId: firstColumn.id })
-          .where(eq(tasks.id, task.id));
-      }
     }
 
     // Soft delete the column
@@ -470,6 +481,96 @@ export const taskGet = os
       trackedMinutes,
       timeEntries: entries,
     };
+  });
+
+export const taskList = os
+  .input(taskListSchema)
+  .handler(async (opt) => {
+    const db = getDb();
+
+    let allTasks = db
+      .select()
+      .from(tasks)
+      .where(isNull(tasks.deletedAt))
+      .all();
+
+    // Filter by search if provided
+    if (opt.input.search) {
+      const search = opt.input.search.toLowerCase();
+      allTasks = allTasks.filter((t) =>
+        t.title.toLowerCase().includes(search)
+      );
+    }
+
+    // Get board info for each task
+    const boardsList = db.select().from(boards).where(isNull(boards.deletedAt)).all();
+    const boardsById = new Map(boardsList.map((b) => [b.id, b]));
+    const columnsList = db.select().from(columns).where(isNull(columns.deletedAt)).all();
+    const columnsById = new Map(columnsList.map((c) => [c.id, c]));
+
+    return allTasks.map((task) => {
+      const board = boardsById.get(task.boardId);
+      const column = columnsById.get(task.columnId);
+      return {
+        ...task,
+        boardName: board?.name,
+        columnName: column?.name,
+      };
+    });
+  });
+
+export const tasksMine = os
+  .input(tasksMineSchema)
+  .handler(async () => {
+    const db = getDb();
+
+    // Get all tasks with due dates
+    const allTasks = db
+      .select()
+      .from(tasks)
+      .where(isNull(tasks.deletedAt))
+      .all()
+      .filter((t) => t.dueDate !== null);
+
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+    // Filter to tasks due today or overdue
+    const myTasks = allTasks.filter((t) => {
+      if (!t.dueDate) return false;
+      const dueDateMs = t.dueDate.getTime();
+      return dueDateMs <= todayStart + 24 * 60 * 60 * 1000; // Due today or before
+    });
+
+    // Get board and column info
+    const boardsList = db.select().from(boards).where(isNull(boards.deletedAt)).all();
+    const boardsById = new Map(boardsList.map((b) => [b.id, b]));
+    const columnsList = db.select().from(columns).where(isNull(columns.deletedAt)).all();
+    const columnsById = new Map(columnsList.map((c) => [c.id, c]));
+    const projectsList = db.select().from(projects).where(isNull(projects.deletedAt)).all();
+    const projectsById = new Map(projectsList.map((p) => [p.id, p]));
+
+    return myTasks.map((task) => {
+      const board = boardsById.get(task.boardId);
+      const column = columnsById.get(task.columnId);
+      const project = board ? projectsById.get(board.projectId) : null;
+      return {
+        id: task.id,
+        title: task.title,
+        priority: task.priority,
+        dueDate: task.dueDate,
+        columnName: column?.name,
+        boardName: board?.name,
+        projectColor: project?.color ?? "#6B7280",
+      };
+    }).sort((a, b) => {
+      // Sort by due date, then priority
+      const aDate = a.dueDate?.getTime() ?? Infinity;
+      const bDate = b.dueDate?.getTime() ?? Infinity;
+      if (aDate !== bDate) return aDate - bDate;
+      const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
+      return (priorityOrder[a.priority] ?? 4) - (priorityOrder[b.priority] ?? 4);
+    });
   });
 
 export const taskUpdate = os

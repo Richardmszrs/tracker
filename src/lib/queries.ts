@@ -585,6 +585,14 @@ export function useTask(id: string | null) {
   });
 }
 
+export function useTasks(search?: string) {
+  return useQuery({
+    queryKey: ["tasks", "list", search],
+    queryFn: () => api.tasks.list({ search }),
+    staleTime: 30_000,
+  });
+}
+
 export function useTaskCreate() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -665,24 +673,7 @@ export function useTaskReorder() {
 export function useMyTasks() {
   return useQuery({
     queryKey: ["tasks", "myTasks"],
-    queryFn: async () => {
-      // Get all boards and their tasks
-      const boards = await api.boards.list({ projectId: "" });
-      const allTasks: Array<{
-        id: string;
-        title: string;
-        priority: string;
-        dueDate: number | null;
-        boardId: string;
-        columnId: string;
-        projectId: string;
-        projectColor: string;
-      }> = [];
-
-      // This is a simplified version - in a real app we'd have a dedicated endpoint
-      return allTasks;
-    },
+    queryFn: () => api.tasks.mine({}),
     staleTime: 30_000,
-    enabled: false, // Disabled by default, enable when needed
   });
 }

@@ -23,7 +23,7 @@ import { KanbanColumn } from "@/components/board/kanban-column";
 import { TaskCard } from "@/components/board/task-card";
 import { TaskDetailSheet } from "@/components/board/task-detail-sheet";
 import { ColumnDialog } from "@/components/board/column-dialog";
-import { useBoard, useBoards, useBoardCreate, useColumnCreate, useTaskMove, useTaskReorder } from "@/lib/queries";
+import { useBoard, useBoards, useBoardCreate, useColumnCreate, useColumnReorder, useTaskMove, useTaskReorder } from "@/lib/queries";
 import type { Task, Column } from "@/components/board/types";
 
 type ViewMode = "kanban" | "list";
@@ -46,6 +46,7 @@ export function BoardPage() {
 
   const createBoardMutation = useBoardCreate();
   const createColumnMutation = useColumnCreate();
+  const columnReorderMutation = useColumnReorder();
   const taskMoveMutation = useTaskMove();
   const taskReorderMutation = useTaskReorder();
 
@@ -198,7 +199,11 @@ export function BoardPage() {
         columns.splice(oldIndex, 1);
         columns.splice(newIndex, 0, data.columns[oldIndex]);
 
-        // Note: Column reorder would require a separate endpoint
+        // Update column order
+        await columnReorderMutation.mutateAsync({
+          boardId: board.id,
+          orderedIds: columns.map((col) => col.id),
+        });
         boardQuery.refetch();
       }
     }

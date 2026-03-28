@@ -62,7 +62,7 @@ export function TaskCard({ task, projectColor, onClick, isDragging }: TaskCardPr
       style={style}
       {...attributes}
       {...listeners}
-      className={`p-3 border rounded-md bg-card cursor-grab active:cursor-grabbing hover:bg-accent/50 transition-colors ${
+      className={`relative p-3 border rounded-md bg-card cursor-grab active:cursor-grabbing hover:bg-accent/50 transition-colors ${
         isSortableDragging || isDragging ? "opacity-50 shadow-lg" : ""
       }`}
       onClick={(e) => {
