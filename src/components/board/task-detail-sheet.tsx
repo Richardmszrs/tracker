@@ -15,6 +15,7 @@ import type { Task } from "./types";
 
 interface TaskDetailSheetProps {
   taskId: string | null;
+  projectId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdate: () => void;
@@ -49,6 +50,7 @@ interface LocalTaskState {
 
 export function TaskDetailSheet({
   taskId,
+  projectId,
   open,
   onOpenChange,
   onUpdate,
@@ -104,6 +106,7 @@ export function TaskDetailSheet({
     if (!task || !localTask.title) return;
     await timerStartMutation.mutateAsync({
       description: localTask.title,
+      projectId,
       taskId: task.id,
     });
   };

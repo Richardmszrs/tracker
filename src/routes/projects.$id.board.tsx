@@ -15,6 +15,7 @@ import {
 } from "@dnd-kit/core";
 import {
   SortableContext,
+  arrayMove,
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { PlusIcon, LayoutGridIcon, ListIcon } from "lucide-react";
@@ -116,7 +117,7 @@ export function BoardPage() {
     }
   };
 
-  const handleDragOver = (event: DragOverEvent) => {
+  const handleDragOver = (_event: DragOverEvent) => {
     // Handle drag over for task reordering between columns
   };
 
@@ -169,12 +170,11 @@ export function BoardPage() {
 
           if (sourceColumn.id === targetColumn.id) {
             // Reorder within same column
-            sourceTasks.splice(oldIndex, 1);
-            sourceTasks.splice(newIndex, 0, sourceTasks[oldIndex] || sourceColumn.tasks[oldIndex]);
+            const reorderedTasks = arrayMove(sourceTasks, oldIndex, newIndex);
 
             await taskReorderMutation.mutateAsync({
               columnId: sourceColumn.id,
-              orderedIds: sourceTasks.map((t) => t.id),
+              orderedIds: reorderedTasks.map((t) => t.id),
             });
           } else {
             // Move to different column
@@ -361,6 +361,7 @@ export function BoardPage() {
       {/* Task Detail Sheet */}
       <TaskDetailSheet
         taskId={selectedTaskId}
+        projectId={projectId}
         open={!!selectedTaskId}
         onOpenChange={(open) => !open && setSelectedTaskId(null)}
         onUpdate={() => boardQuery.refetch()}

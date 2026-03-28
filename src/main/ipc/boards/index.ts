@@ -1,5 +1,5 @@
 import { os } from "@orpc/server";
-import { eq, isNull, and, asc } from "drizzle-orm";
+import { eq, isNull, and, asc, desc } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { getDb } from "@/main/db/client";
@@ -187,7 +187,11 @@ export const boardGet = os
 
     // Batch fetch: Get all time entries for these tasks
     const allEntries = taskIds.length > 0
-      ? db.select().from(timeEntries).all()
+      ? db
+          .select()
+          .from(timeEntries)
+          .where(isNull(timeEntries.deletedAt))
+          .all()
           .filter((e) => e.taskId && taskIds.includes(e.taskId))
       : [];
 
@@ -275,7 +279,7 @@ export const columnCreate = os
       .select()
       .from(columns)
       .where(and(eq(columns.boardId, opt.input.boardId), isNull(columns.deletedAt)))
-      .orderBy(asc(columns.order))
+      .orderBy(desc(columns.order))
       .get();
 
     const order = lastColumn ? lastColumn.order + 1 : 0;
@@ -386,7 +390,7 @@ export const taskCreate = os
       .select()
       .from(tasks)
       .where(and(eq(tasks.columnId, opt.input.columnId), isNull(tasks.deletedAt)))
-      .orderBy(asc(tasks.order))
+      .orderBy(desc(tasks.order))
       .get();
 
     const order = lastTask ? lastTask.order + 1 : 0;
@@ -465,7 +469,7 @@ export const taskGet = os
     const entries = db
       .select()
       .from(timeEntries)
-      .where(eq(timeEntries.taskId, task.id))
+      .where(and(eq(timeEntries.taskId, task.id), isNull(timeEntries.deletedAt)))
       .all();
 
     const trackedMinutes = entries.reduce((sum, e) => {
@@ -663,13 +667,67 @@ export const taskMove = os
   .handler(async (opt) => {
     const db = getDb();
 
-    await db
-      .update(tasks)
-      .set({
-        columnId: opt.input.targetColumnId,
-        order: opt.input.newOrder,
-      })
-      .where(eq(tasks.id, opt.input.id));
+    const movedTask = db
+      .select()
+      .from(tasks)
+      .where(and(eq(tasks.id, opt.input.id), isNull(tasks.deletedAt)))
+      .get();
+
+    if (!movedTask) {
+      throw new Error("Task not found");
+    }
+
+    const sourceColumnTasks = db
+      .select()
+      .from(tasks)
+      .where(and(eq(tasks.columnId, movedTask.columnId), isNull(tasks.deletedAt)))
+      .orderBy(asc(tasks.order))
+      .all();
+
+    const targetColumnTasks = movedTask.columnId === opt.input.targetColumnId
+      ? sourceColumnTasks
+      : db
+          .select()
+          .from(tasks)
+          .where(and(eq(tasks.columnId, opt.input.targetColumnId), isNull(tasks.deletedAt)))
+          .orderBy(asc(tasks.order))
+          .all();
+
+    const sourceWithoutMoved = sourceColumnTasks.filter((task) => task.id !== movedTask.id);
+    const targetWithoutMoved = targetColumnTasks.filter((task) => task.id !== movedTask.id);
+    const insertIndex = Math.max(0, Math.min(opt.input.newOrder, targetWithoutMoved.length));
+    const reorderedTarget = [...targetWithoutMoved];
+
+    reorderedTarget.splice(insertIndex, 0, {
+      ...movedTask,
+      columnId: opt.input.targetColumnId,
+    });
+
+    if (movedTask.columnId === opt.input.targetColumnId) {
+      for (const [index, task] of reorderedTarget.entries()) {
+        await db
+          .update(tasks)
+          .set({ order: index })
+          .where(eq(tasks.id, task.id));
+      }
+    } else {
+      for (const [index, task] of sourceWithoutMoved.entries()) {
+        await db
+          .update(tasks)
+          .set({ order: index })
+          .where(eq(tasks.id, task.id));
+      }
+
+      for (const [index, task] of reorderedTarget.entries()) {
+        await db
+          .update(tasks)
+          .set({
+            columnId: opt.input.targetColumnId,
+            order: index,
+          })
+          .where(eq(tasks.id, task.id));
+      }
+    }
 
     const [result] = await db
       .select()
