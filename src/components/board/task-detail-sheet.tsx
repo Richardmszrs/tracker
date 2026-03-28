@@ -141,9 +141,19 @@ export function TaskDetailSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[480px] overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle className="sr-only">Task Details</SheetTitle>
+      <SheetContent side="right" className="w-[32rem] p-0">
+        <SheetHeader className="gap-3">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-2xl bg-foreground text-background shadow-sm">
+              <ClockIcon className="size-4" />
+            </div>
+            <div className="space-y-1">
+              <SheetTitle className="text-base">Task Details</SheetTitle>
+              <p className="max-w-sm text-xs text-muted-foreground">
+                Shape the work, tune the estimate, and jump straight into focused time tracking.
+              </p>
+            </div>
+          </div>
         </SheetHeader>
 
         {isLoading || !task ? (
@@ -151,24 +161,24 @@ export function TaskDetailSheet({
             Loading...
           </div>
         ) : (
-          <div className="space-y-6 pt-4">
+          <div className="space-y-5 overflow-y-auto px-6 py-6 sm:px-7">
             {/* Title */}
-            <div>
+            <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
               <Input
                 value={localTask.title ?? ""}
                 onChange={(e) =>
                   setLocalTask((prev) => ({ ...prev, title: e.target.value }))
                 }
                 onBlur={handleSave}
-                className="text-lg font-semibold border-0 p-0 h-auto focus:ring-0"
+                className="h-auto border-0 bg-transparent p-0 text-lg font-semibold shadow-none focus-visible:ring-0"
                 placeholder="Task title"
               />
             </div>
 
             {/* Priority */}
-            <div className="space-y-2">
+            <div className="space-y-3 rounded-2xl border border-border/60 bg-muted/20 p-4">
               <span className="text-sm text-muted-foreground">Priority</span>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {priorities.map((p) => (
                   <Button
                     key={p}
@@ -193,13 +203,13 @@ export function TaskDetailSheet({
             </div>
 
             {/* Due Date */}
-            <div className="space-y-2">
+            <div className="space-y-2 rounded-2xl border border-border/60 bg-muted/20 p-4">
               <span className="text-sm text-muted-foreground">Due Date</span>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full justify-start text-left font-normal"
+                    className="w-full justify-start bg-background/80 text-left font-normal"
                   >
                     <CalendarIcon className="mr-2 size-4" />
                     {localTask.dueDate
@@ -226,7 +236,7 @@ export function TaskDetailSheet({
             </div>
 
             {/* Estimate */}
-            <div className="space-y-2">
+            <div className="space-y-2 rounded-2xl border border-border/60 bg-muted/20 p-4">
               <span className="text-sm text-muted-foreground">
                 Estimated Time
               </span>
@@ -239,7 +249,7 @@ export function TaskDetailSheet({
             </div>
 
             {/* Description */}
-            <div className="space-y-2">
+            <div className="space-y-2 rounded-2xl border border-border/60 bg-muted/20 p-4">
               <span className="text-sm text-muted-foreground">Description</span>
               <Textarea
                 value={localTask.description ?? ""}
@@ -256,7 +266,7 @@ export function TaskDetailSheet({
             </div>
 
             {/* Tags */}
-            <div className="space-y-2">
+            <div className="space-y-3 rounded-2xl border border-border/60 bg-muted/20 p-4">
               <span className="text-sm text-muted-foreground">Tags</span>
               <div className="flex flex-wrap gap-2">
                 {tags.map((tag) => (
@@ -282,12 +292,12 @@ export function TaskDetailSheet({
             </div>
 
             {/* Time Tracked */}
-            <div className="space-y-2">
+            <div className="space-y-3 rounded-2xl border border-border/60 bg-muted/20 p-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">
                   Time Tracked
                 </span>
-                <Button size="sm" onClick={handleStartTimer}>
+                <Button size="sm" className="shadow-sm" onClick={handleStartTimer}>
                   <PlayIcon className="size-3 mr-1" />
                   Start timer
                 </Button>
@@ -308,7 +318,7 @@ export function TaskDetailSheet({
                   {task.timeEntries.map((entry) => (
                     <div
                       key={entry.id}
-                      className="flex items-center justify-between text-xs p-2 border rounded"
+                      className="flex items-center justify-between rounded-xl border border-border/60 bg-background/80 p-2.5 text-xs"
                     >
                       <span>{entry.description}</span>
                       <span className="text-muted-foreground">
@@ -330,7 +340,7 @@ export function TaskDetailSheet({
             </div>
 
             {/* Actions */}
-            <div className="flex items-center justify-between pt-4 border-t">
+            <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background/70 p-4">
               <Button
                 variant="outline"
                 size="sm"

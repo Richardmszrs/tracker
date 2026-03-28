@@ -103,63 +103,76 @@ export function ProjectFormSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-96">
+      <SheetContent side="right" className="w-[30rem] p-0">
         <SheetHeader>
-          <SheetTitle>{project ? "Edit Project" : "New Project"}</SheetTitle>
-          <SheetDescription>
+          <span className="text-[0.625rem] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+            Workspace Setup
+          </span>
+          <SheetTitle className="text-base">
+            {project ? "Edit Project" : "New Project"}
+          </SheetTitle>
+          <SheetDescription className="max-w-sm">
             {project
               ? "Update the project details."
               : "Create a new project to track time against."}
           </SheetDescription>
         </SheetHeader>
-        <div className="flex flex-col gap-4 py-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="project-name">Name</Label>
-            <Input
-              id="project-name"
-              placeholder="Project name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              autoFocus
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label>Color</Label>
-            <div className="flex items-center gap-2">
-              <ColorPicker value={color} onChange={setColor} />
-              <span className="text-xs text-muted-foreground">{color}</span>
+        <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-6 py-6 sm:px-7">
+          <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="project-name">Name</Label>
+              <Input
+                id="project-name"
+                placeholder="Project name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                autoFocus
+              />
             </div>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="project-client">Client</Label>
-            <Select value={clientId} onValueChange={setClientId}>
-              <SelectTrigger id="project-client">
-                <SelectValue placeholder="No client" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">No client</SelectItem>
-                {clients.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
+            <div className="flex flex-col gap-1.5">
+              <Label>Color</Label>
+              <div className="flex items-center gap-3">
+                <ColorPicker value={color} onChange={setColor} />
+                <span className="rounded-full border border-border/60 bg-background/80 px-2.5 py-1 font-mono text-[0.625rem] text-muted-foreground">
+                  {color}
+                </span>
+              </div>
+            </div>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="project-rate">Hourly Rate</Label>
-            <Input
-              id="project-rate"
-              type="number"
-              placeholder="0.00"
-              step="0.01"
-              min="0"
-              value={hourlyRate}
-              onChange={(e) => setHourlyRate(e.target.value)}
-            />
+          <div className="grid gap-4 rounded-2xl border border-border/60 bg-muted/20 p-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="project-client">Client</Label>
+              <Select value={clientId} onValueChange={setClientId}>
+                <SelectTrigger id="project-client">
+                  <SelectValue placeholder="No client" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">No client</SelectItem>
+                  {clients.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="project-rate">Hourly Rate</Label>
+              <Input
+                id="project-rate"
+                type="number"
+                placeholder="0.00"
+                step="0.01"
+                min="0"
+                value={hourlyRate}
+                onChange={(e) => setHourlyRate(e.target.value)}
+              />
+            </div>
           </div>
           {project && (
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-muted/20 p-4">
               <div className="flex flex-col gap-0.5">
                 <Label htmlFor="project-billable">Billable</Label>
                 <span className="text-[0.625rem] text-muted-foreground">
