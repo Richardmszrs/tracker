@@ -12,6 +12,7 @@ import type { ForgeConfig } from "@electron-forge/shared-types";
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    icon: "./build/icons/mac/icon.icns",
     ignore: (file) => {
       if (!file) {
         return false;
