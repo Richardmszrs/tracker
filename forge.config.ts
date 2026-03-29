@@ -43,12 +43,12 @@ const config: ForgeConfig = {
       /*
        * Publish release on GitHub as draft.
        * Remember to manually publish it on GitHub website after verifying everything is correct.
-       */
+        */
       name: "@electron-forge/publisher-github",
       config: {
         repository: {
-          owner: "LuanRoger",
-          name: "electron-shadcn",
+          owner: "Richardmszrs",
+          name: "tracker",
         },
         draft: true,
         prerelease: false,
