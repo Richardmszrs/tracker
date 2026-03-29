@@ -48,8 +48,8 @@ export default function Sidebar() {
 
   return (
     <>
-      <aside className="flex h-full w-48 flex-col border-border border-r bg-sidebar pb-4 pt-6">
-        <div className="mb-6 pl-6 pr-4">
+      <aside className="mr-3 flex h-full w-56 flex-col rounded-[2rem] border border-sidebar-border bg-sidebar/90 pb-4 pt-6 shadow-[0_28px_72px_-42px_rgba(15,23,42,0.45)] ring-1 ring-white/40 backdrop-blur-xl">
+        <div className="mb-8 px-6">
           <img
             src={lightLogoSrc}
             alt="Time Tracker"
@@ -61,16 +61,16 @@ export default function Sidebar() {
             className="hidden h-8 w-auto dark:block"
           />
         </div>
-        <nav className="flex flex-1 flex-col gap-0.5 px-2">
+        <nav className="flex flex-1 flex-col gap-1 px-3">
           {navItems.map((item) => {
             const isActive = location.pathname === item.to;
             return (
               <Link
                 className={cn(
-                  "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors",
+                  "flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-sm transition-all",
                   isActive
-                    ? "bg-accent font-medium text-accent-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 )}
                 key={item.to}
                 to={item.to}
@@ -81,17 +81,21 @@ export default function Sidebar() {
             );
           })}
         </nav>
-        <div className="flex flex-col gap-0.5 px-2">
-          <div className="flex items-center justify-between px-3 py-2">
-            <span className="text-xs text-muted-foreground">Sync</span>
-            <SyncIndicator />
+        <div className="flex flex-col gap-1 px-3">
+          <div className="mx-1 mb-2 rounded-2xl border border-sidebar-border/80 bg-background/55 px-3.5 py-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[0.625rem] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+                Sync
+              </span>
+              <SyncIndicator />
+            </div>
           </div>
           <Link
             className={cn(
-              "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors",
+              "flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-sm transition-all",
               location.pathname === "/settings"
-                ? "bg-accent font-medium text-accent-foreground"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             )}
             to="/settings"
           >
@@ -99,7 +103,7 @@ export default function Sidebar() {
             Settings
           </Link>
           <button
-            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground w-full"
+            className="flex w-full items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-sm text-muted-foreground transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             onClick={() => setShortcutsOpen(true)}
           >
             <KeyboardIcon className="size-4 shrink-0" />
@@ -109,20 +113,25 @@ export default function Sidebar() {
       </aside>
 
       <Dialog open={shortcutsOpen} onOpenChange={setShortcutsOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Keyboard Shortcuts</DialogTitle>
-            <DialogDescription>
-              Quick reference for all available shortcuts.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-3 pt-2">
+        <DialogContent className="overflow-hidden p-0 sm:max-w-lg">
+          <div className="border-b border-border/60 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.16),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.82))] px-6 pb-6 pt-8 sm:px-8">
+            <DialogHeader className="gap-2">
+              <DialogTitle className="text-lg">Keyboard Shortcuts</DialogTitle>
+              <DialogDescription className="max-w-md">
+                Quick reference for the fastest paths through the app.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="grid gap-3 px-6 py-6 sm:px-8">
             {shortcuts.map((s) => (
-              <div key={s.desc} className="flex items-center justify-between">
+              <div
+                key={s.desc}
+                className="flex items-center justify-between rounded-2xl border border-border/60 bg-muted/20 px-4 py-3"
+              >
                 <span className="text-xs text-muted-foreground">{s.desc}</span>
                 <div className="flex gap-1">
                   {s.keys.map((k) => (
-                    <Badge key={k} variant="outline" className="text-[0.625rem] h-5 px-1.5 font-mono">
+                    <Badge key={k} variant="outline" className="h-6 rounded-full bg-background/80 px-2 font-mono text-[0.625rem]">
                       {k}
                     </Badge>
                   ))}
