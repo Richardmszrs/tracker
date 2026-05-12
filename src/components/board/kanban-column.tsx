@@ -19,7 +19,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { TaskCard } from "./task-card";
 import { ColumnDialog } from "./column-dialog";
-import { useColumnUpdate, useColumnDelete, useTaskCreate, useBoard } from "@/lib/queries";
+import { columnDndId, columnDropDndId, taskDndId } from "./dnd";
+import { useColumnUpdate, useColumnDelete, useTaskCreate } from "@/lib/queries";
 import type { Column as ColumnType } from "./types";
 
 interface KanbanColumnProps {
@@ -41,8 +42,8 @@ export function KanbanColumn({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const { setNodeRef } = useDroppable({
-    id: column.id,
-    data: { type: "column" },
+    id: columnDropDndId(column.id),
+    data: { type: "column-drop", columnId: column.id },
   });
 
   const {
@@ -53,8 +54,8 @@ export function KanbanColumn({
     transition,
     isDragging,
   } = useSortable({
-    id: column.id,
-    data: { type: "column" },
+    id: columnDndId(column.id),
+    data: { type: "column", columnId: column.id },
   });
 
   const style = {
@@ -157,13 +158,14 @@ export function KanbanColumn({
         className="flex-1 overflow-y-auto px-2 pb-2 space-y-2"
       >
         <SortableContext
-          items={column.tasks.map((t) => t.id)}
+          items={column.tasks.map((t) => taskDndId(t.id))}
           strategy={verticalListSortingStrategy}
         >
           {column.tasks.map((task) => (
             <TaskCard
               key={task.id}
               task={task}
+              dndId={taskDndId(task.id)}
               projectColor={projectColor}
               onClick={() => onTaskClick(task.id)}
             />

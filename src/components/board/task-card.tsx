@@ -2,6 +2,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import type { UniqueIdentifier } from "@dnd-kit/core";
 import { CalendarIcon, ClockIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { Task } from "./types";
@@ -9,8 +10,8 @@ import type { Task } from "./types";
 interface TaskCardProps {
   task: Task;
   projectColor: string;
+  dndId?: UniqueIdentifier;
   onClick?: () => void;
-  isDragging?: boolean;
 }
 
 const priorityColors = {
@@ -21,7 +22,7 @@ const priorityColors = {
   urgent: "bg-red-100 text-red-700 border-red-200",
 };
 
-export function TaskCard({ task, projectColor, onClick, isDragging }: TaskCardProps) {
+export function TaskCard({ task, projectColor, dndId, onClick }: TaskCardProps) {
   const {
     attributes,
     listeners,
@@ -30,8 +31,8 @@ export function TaskCard({ task, projectColor, onClick, isDragging }: TaskCardPr
     transition,
     isDragging: isSortableDragging,
   } = useSortable({
-    id: task.id,
-    data: { type: "task" },
+    id: dndId ?? task.id,
+    data: { type: "task", taskId: task.id, columnId: task.columnId },
   });
 
   const style = {
@@ -63,20 +64,97 @@ export function TaskCard({ task, projectColor, onClick, isDragging }: TaskCardPr
       {...attributes}
       {...listeners}
       className={`relative p-3 border rounded-md bg-card cursor-grab active:cursor-grabbing hover:bg-accent/50 transition-colors ${
-        isSortableDragging || isDragging ? "opacity-50 shadow-lg" : ""
+        isSortableDragging ? "opacity-50 shadow-lg" : ""
       }`}
       onClick={(e) => {
         // Don't trigger click if we're dragging
-        if (!isSortableDragging && !isDragging && onClick) {
+        if (!isSortableDragging && onClick) {
           e.stopPropagation();
           onClick();
         }
       }}
     >
-      {/* Title */}
+      <TaskCardContent
+        task={task}
+        projectColor={projectColor}
+        isOverdue={isOverdue}
+        isDueToday={isDueToday}
+        trackedHours={trackedHours}
+        trackedMins={trackedMins}
+        estimatedHours={estimatedHours}
+        estimatedMins={estimatedMins}
+        progress={progress}
+      />
+    </div>
+  );
+}
+
+export function TaskCardPreview({
+  task,
+  projectColor,
+}: {
+  task: Task;
+  projectColor: string;
+}) {
+  const isOverdue = task.dueDate
+    ? new Date(task.dueDate) < new Date(new Date().setHours(0, 0, 0, 0))
+    : false;
+  const isDueToday = task.dueDate
+    ? new Date(task.dueDate).toDateString() === new Date().toDateString()
+    : false;
+
+  const trackedHours = Math.floor((task.trackedMinutes || 0) / 60);
+  const trackedMins = (task.trackedMinutes || 0) % 60;
+  const estimatedHours = Math.floor((task.estimatedMinutes || 0) / 60);
+  const estimatedMins = (task.estimatedMinutes || 0) % 60;
+
+  const progress =
+    task.estimatedMinutes && task.estimatedMinutes > 0
+      ? Math.min(100, Math.round(((task.trackedMinutes || 0) / task.estimatedMinutes) * 100))
+      : null;
+
+  return (
+    <div className="relative p-3 border rounded-md bg-card shadow-lg">
+      <TaskCardContent
+        task={task}
+        projectColor={projectColor}
+        isOverdue={isOverdue}
+        isDueToday={isDueToday}
+        trackedHours={trackedHours}
+        trackedMins={trackedMins}
+        estimatedHours={estimatedHours}
+        estimatedMins={estimatedMins}
+        progress={progress}
+      />
+    </div>
+  );
+}
+
+function TaskCardContent({
+  task,
+  projectColor,
+  isOverdue,
+  isDueToday,
+  trackedHours,
+  trackedMins,
+  estimatedHours,
+  estimatedMins,
+  progress,
+}: {
+  task: Task;
+  projectColor: string;
+  isOverdue: boolean;
+  isDueToday: boolean;
+  trackedHours: number;
+  trackedMins: number;
+  estimatedHours: number;
+  estimatedMins: number;
+  progress: number | null;
+}) {
+  return (
+    <>
       <p className="font-medium text-sm line-clamp-2 mb-2">{task.title}</p>
 
-      {/* Priority Badge */}
       {task.priority !== "none" && (
         <Badge
           variant="outline"
@@ -86,7 +164,6 @@ export function TaskCard({ task, projectColor, onClick, isDragging }: TaskCardPr
         </Badge>
       )}
 
-      {/* Tags */}
       {task.tags && task.tags.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-2">
           {task.tags.slice(0, 2).map((tag) => (
@@ -109,7 +186,6 @@ export function TaskCard({ task, projectColor, onClick, isDragging }: TaskCardPr
         </div>
       )}
 
-      {/* Due Date */}
       {task.dueDate && (
         <div
           className={`flex items-center gap-1 text-[0.625rem] mb-2 ${
@@ -131,7 +207,6 @@ export function TaskCard({ task, projectColor, onClick, isDragging }: TaskCardPr
         </div>
       )}
 
-      {/* Tracked Time / Estimate */}
       {(task.trackedMinutes || task.estimatedMinutes) && (
         <div className="flex items-center justify-between text-[0.625rem]">
           <div className="flex items-center gap-1 text-muted-foreground">
@@ -156,8 +231,8 @@ export function TaskCard({ task, projectColor, onClick, isDragging }: TaskCardPr
                 progress >= 100
                   ? "text-green-600"
                   : progress >= 80
-                  ? "text-orange-600"
-                  : ""
+                    ? "text-orange-600"
+                    : ""
               }`}
             >
               {progress}%
@@ -166,7 +241,6 @@ export function TaskCard({ task, projectColor, onClick, isDragging }: TaskCardPr
         </div>
       )}
 
-      {/* Progress Bar */}
       {progress !== null && (
         <div className="mt-2 h-1 bg-muted rounded-full overflow-hidden">
           <div
@@ -174,19 +248,18 @@ export function TaskCard({ task, projectColor, onClick, isDragging }: TaskCardPr
               progress >= 100
                 ? "bg-green-500"
                 : progress >= 80
-                ? "bg-orange-500"
-                : "bg-blue-500"
+                  ? "bg-orange-500"
+                  : "bg-blue-500"
             }`}
             style={{ width: `${Math.min(100, progress)}%` }}
           />
         </div>
       )}
 
-      {/* Project Color Dot */}
       <div
         className="absolute bottom-2 left-2 size-2 rounded-full"
         style={{ backgroundColor: projectColor }}
       />
-    </div>
+    </>
   );
 }

@@ -11,7 +11,6 @@ import {
   useSensors,
   type DragStartEvent,
   type DragEndEvent,
-  type DragOverEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -21,13 +20,27 @@ import {
 import { PlusIcon, LayoutGridIcon, ListIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { KanbanColumn } from "@/components/board/kanban-column";
-import { TaskCard } from "@/components/board/task-card";
+import { TaskCardPreview } from "@/components/board/task-card";
 import { TaskDetailSheet } from "@/components/board/task-detail-sheet";
 import { ColumnDialog } from "@/components/board/column-dialog";
+import { columnDndId } from "@/components/board/dnd";
 import { useBoard, useBoards, useBoardCreate, useColumnCreate, useColumnReorder, useTaskMove, useTaskReorder } from "@/lib/queries";
-import type { Task, Column } from "@/components/board/types";
+import type { Task } from "@/components/board/types";
 
 type ViewMode = "kanban" | "list";
+
+type DragData =
+  | { type: "task"; taskId: string; columnId: string }
+  | { type: "column"; columnId: string }
+  | { type: "column-drop"; columnId: string };
+
+function getDragData(item: { data: { current?: unknown } }) {
+  return item.data.current as DragData | undefined;
+}
+
+function orderedIdsMatch(first: string[], second: string[]) {
+  return first.length === second.length && first.every((id, index) => id === second[index]);
+}
 
 export function BoardPage() {
   const params = useParams({ strict: false }) as { id: string };
@@ -41,7 +54,6 @@ export function BoardPage() {
 
   const [viewMode, setViewMode] = useState<ViewMode>("kanban");
   const [activeTask, setActiveTask] = useState<Task | null>(null);
-  const [activeColumn, setActiveColumn] = useState<Column | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [addingColumnOpen, setAddingColumnOpen] = useState(false);
 
@@ -104,21 +116,14 @@ export function BoardPage() {
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
-    const activeType = active.data.current?.type;
+    const activeData = getDragData(active);
 
-    if (activeType === "task") {
+    if (activeData?.type === "task") {
       const task = data.columns
         .flatMap((col) => col.tasks)
-        .find((t) => t.id === active.id);
+        .find((t) => t.id === activeData.taskId);
       setActiveTask(task ?? null);
-    } else if (activeType === "column") {
-      const column = data.columns.find((col) => col.id === active.id);
-      setActiveColumn(column ?? null);
     }
-  };
-
-  const handleDragOver = (_event: DragOverEvent) => {
-    // Handle drag over for task reordering between columns
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -126,90 +131,79 @@ export function BoardPage() {
 
     if (!over) {
       setActiveTask(null);
-      setActiveColumn(null);
       return;
     }
 
-    const activeType = active.data.current?.type;
+    const activeData = getDragData(active);
+    const overData = getDragData(over);
 
-    if (activeType === "task") {
-      const taskId = active.id as string;
-      const overType = over.data.current?.type;
-
-      if (overType === "column") {
-        // Dropped on a column - move to that column at the end
-        const targetColumnId = over.id as string;
-        const targetColumn = data.columns.find((col) => col.id === targetColumnId);
-        if (targetColumn) {
-          const newOrder = targetColumn.tasks.length;
-          await taskMoveMutation.mutateAsync({
-            id: taskId,
-            targetColumnId,
-            newOrder,
-          });
-          boardQuery.refetch();
-        }
-      } else if (overType === "task") {
-        // Dropped on another task - reorder within the same or different column
-        const overTaskId = over.id as string;
-        const sourceColumn = data.columns.find((col) =>
-          col.tasks.some((t) => t.id === taskId)
-        );
-        const targetColumn = data.columns.find((col) =>
-          col.tasks.some((t) => t.id === overTaskId)
-        );
-
-        if (sourceColumn && targetColumn) {
-          const sourceTasks = [...sourceColumn.tasks];
-          const targetTasks = sourceColumn.id === targetColumn.id
-            ? sourceTasks
-            : [...targetColumn.tasks];
-
-          const oldIndex = sourceTasks.findIndex((t) => t.id === taskId);
-          const newIndex = targetTasks.findIndex((t) => t.id === overTaskId);
-
-          if (sourceColumn.id === targetColumn.id) {
-            // Reorder within same column
-            const reorderedTasks = arrayMove(sourceTasks, oldIndex, newIndex);
-
-            await taskReorderMutation.mutateAsync({
-              columnId: sourceColumn.id,
-              orderedIds: reorderedTasks.map((t) => t.id),
-            });
-          } else {
-            // Move to different column
-            await taskMoveMutation.mutateAsync({
-              id: taskId,
-              targetColumnId: targetColumn.id,
-              newOrder: newIndex,
-            });
-          }
-          boardQuery.refetch();
-        }
+    try {
+      if (!activeData || !overData) {
+        return;
       }
-    } else if (activeType === "column") {
-      const columnId = active.id as string;
-      const overColumnId = over.id as string;
 
-      if (columnId !== overColumnId) {
-        const columns = [...data.columns];
-        const oldIndex = columns.findIndex((col) => col.id === columnId);
-        const newIndex = columns.findIndex((col) => col.id === overColumnId);
+      if (activeData.type === "task") {
+        const sourceColumn = data.columns.find((col) =>
+          col.tasks.some((task) => task.id === activeData.taskId)
+        );
+        const targetColumn = data.columns.find((col) => col.id === overData.columnId);
 
-        columns.splice(oldIndex, 1);
-        columns.splice(newIndex, 0, data.columns[oldIndex]);
+        if (!sourceColumn || !targetColumn) {
+          return;
+        }
 
-        // Update column order
+        const targetIndex =
+          overData.type === "task"
+            ? targetColumn.tasks.findIndex((task) => task.id === overData.taskId)
+            : targetColumn.tasks.length;
+
+        if (targetIndex === -1) {
+          return;
+        }
+
+        if (sourceColumn.id === targetColumn.id) {
+          const oldIndex = sourceColumn.tasks.findIndex((task) => task.id === activeData.taskId);
+          if (oldIndex === -1 || oldIndex === targetIndex) {
+            return;
+          }
+
+          const reorderedTasks = arrayMove(sourceColumn.tasks, oldIndex, targetIndex);
+          const orderedIds = reorderedTasks.map((task) => task.id);
+          if (orderedIdsMatch(orderedIds, sourceColumn.tasks.map((task) => task.id))) {
+            return;
+          }
+
+          await taskReorderMutation.mutateAsync({
+            columnId: sourceColumn.id,
+            orderedIds,
+          });
+        } else {
+          await taskMoveMutation.mutateAsync({
+            id: activeData.taskId,
+            targetColumnId: targetColumn.id,
+            newOrder: targetIndex,
+          });
+        }
+
+        await boardQuery.refetch();
+      } else if (activeData.type === "column") {
+        const oldIndex = data.columns.findIndex((column) => column.id === activeData.columnId);
+        const newIndex = data.columns.findIndex((column) => column.id === overData.columnId);
+
+        if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) {
+          return;
+        }
+
+        const reorderedColumns = arrayMove(data.columns, oldIndex, newIndex);
         await columnReorderMutation.mutateAsync({
           boardId: board.id,
-          orderedIds: columns.map((col) => col.id),
+          orderedIds: reorderedColumns.map((col) => col.id),
         });
-        boardQuery.refetch();
+        await boardQuery.refetch();
       }
+    } finally {
+      setActiveTask(null);
     }
-
-    setActiveTask(null);
-    setActiveColumn(null);
   };
 
   const handleAddColumn = async (name: string, color: string) => {
@@ -260,13 +254,13 @@ export function BoardPage() {
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
+          onDragCancel={() => setActiveTask(null)}
           onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
           <div className="flex-1 flex gap-4 p-4 overflow-x-auto">
             <SortableContext
-              items={data.columns.map((col) => col.id)}
+              items={data.columns.map((col) => columnDndId(col.id))}
               strategy={horizontalListSortingStrategy}
             >
               {data.columns.map((column) => (
@@ -295,10 +289,9 @@ export function BoardPage() {
 
           <DragOverlay>
             {activeTask && (
-              <TaskCard
+              <TaskCardPreview
                 task={activeTask}
                 projectColor="#6B7280"
-                isDragging
               />
             )}
           </DragOverlay>
